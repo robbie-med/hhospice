@@ -48,9 +48,30 @@ function functionalSentence(ev, sex, pick) {
   return sentence(fn) + (adl ? ' ' + sentence(adl) : '');
 }
 
+/** Sudden catastrophic event: function before, the event, and that the drop happened over days. */
+function onsetSentence(patient, current, sex) {
+  const g = current?.general || {};
+  if (g.onset !== 'acute') return '';
+  const who = patient.label || 'the patient';
+  const before = g.preEventDesc ? g.preEventDesc.trim().replace(/[.]$/, '') : 'functionally independent';
+  const pps = g.preEventPps ? ` (PPS ${g.preEventPps}%)` : '';
+  const when = g.eventDate ? `Before ${fmtDate(g.eventDate)}` : 'Before this illness';
+  const first = sentence(`${when}, ${who} was ${before}${pps}`);
+  const second = g.eventDesc ? sentence(`${g.eventDate ? 'On that date' : 'Then'} ${pronoun(sex)} sustained ${g.eventDesc.trim().replace(/[.]$/, '')}`) : '';
+  return [first, second].filter(Boolean).join(' ');
+}
+
 function trajectorySentences(ev, sex, pick) {
   const t = ev.trajectory;
   if (!t.length) return '';
+  if (t[0].preEvent) {
+    const worse = t.filter((x) => x.worse).map((x) => `${lc(x.label)} ${x.baseline.text} to ${x.current.text}`);
+    if (!worse.length) return '';
+    return sentence(pick([
+      `Compared with function before the event, ${joinAnd(worse)}, a decline that occurred over days rather than months`,
+      `Against the pre-event baseline, ${joinAnd(worse)}; this loss of function was abrupt and has not recovered`,
+    ]));
+  }
   const worse = t.filter((x) => x.worse);
   const stable = t.filter((x) => x.same);
   const better = t.filter((x) => !x.worse && !x.same);
@@ -150,6 +171,7 @@ export function composeInitial({ patient, category, current, evaluation, period 
     `I evaluated ${patient.label || 'the patient'}, ${an(patient.age)} ${patient.age}-year-old ${sexWord(sex)}, on ${fmtDate(current.general.date)} for hospice certification with a principal diagnosis of ${dxName(category, patient)}`,
     `This ${patient.age}-year-old ${sexWord(sex)} (${patient.label || 'label'}) has ${dxName(category, patient)} and was assessed for hospice eligibility on ${fmtDate(current.general.date)}`,
   ])));
+  body.push(onsetSentence(patient, current, sex));
   body.push(diseaseSentences(evaluation, patient, category, pick));
   body.push(functionalSentence(evaluation, sex, pick));
   body.push(trajectorySentences(evaluation, sex, pick));
@@ -177,7 +199,7 @@ export function composeInitial({ patient, category, current, evaluation, period 
 /** Recertification narrative. Returns { text } or { error } when the trajectory cannot be documented. */
 export function composeRecert({ patient, category, current, baseline, evaluation, period, f2f }) {
   if (!baseline) {
-    return { error: 'A recertification narrative needs at least two assessments (a prior one and the current one) so the decline since the last certification can be described. Add an earlier snapshot, or enter the previous period\'s findings as a dated snapshot.' };
+    return { error: 'A recertification narrative needs at least two assessments (a prior one and the current one) so the decline since the last certification can be described. Add an earlier snapshot, or enter the previous period\'s findings as a dated snapshot. For a sudden catastrophic event, record the pre-event function in the assessment instead.' };
   }
   if (!evaluation.trajectory.length) {
     return { error: 'The prior and current assessments share no comparable measure (PPS, weight, albumin, ADLs, FAST…). Record at least one measure in both so decline can be shown.' };
@@ -195,6 +217,7 @@ export function composeRecert({ patient, category, current, baseline, evaluation
   if (f2f?.date) {
     body.push(sentence(`A face-to-face encounter was performed on ${fmtDate(f2f.date)} by ${f2f.clinician || 'the hospice physician/nurse practitioner'}, and the clinical findings of that encounter were used in this recertification`));
   }
+  body.push(onsetSentence(patient, current, sex));
   body.push(trajectorySentences(evaluation, sex, pick));
   if (!worse.length) {
     body.push(sentence(pick([
@@ -245,7 +268,7 @@ export function composeF2F({ patient, category, current, evaluation, period, f2f
     'Clinical findings from the encounter:',
     findings.length ? `- ${findings.join('\n- ')}` : '- [enter findings]',
     dxMet.length ? `- ${dxMet.join('\n- ')}` : null,
-    worse.length ? `- Decline since prior assessment: ${joinAnd(worse)}` : null,
+    worse.length ? `- ${evaluation.baselineKind === 'pre-event' ? 'Decline from pre-event function' : 'Decline since prior assessment'}: ${joinAnd(worse)}` : null,
     g.findings ? `- ${g.findings.split(/\n+/).join('\n- ')}` : null,
     '',
     'These clinical findings were provided to the certifying physician for use in determining continued eligibility for hospice care.',

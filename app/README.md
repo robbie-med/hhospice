@@ -17,6 +17,18 @@ Nothing leaves the browser. Patient records are pseudonymous labels stored in In
   patient, and refuses to write a recert without a prior assessment to compare against.
 - Reference/calculator needs are already served (Fast Facts, ePrognosis, MDCalc, opioid converters).
 
+## Starting points
+
+The home page offers one entry per task: initial certification, recertification, face-to-face
+attestation, sudden catastrophic event, and goals-of-care note. Each opens the workbench with the
+right defaults and short, hideable guidance for that scenario (`#/certify?start=initial|recert|f2f|acute`).
+
+**Sudden catastrophic event** (a large stroke, anoxic injury or catastrophic bleed in someone who was
+well): there is no months-long decline curve, so the assessment records the date of the event, the event
+with its imaging or exam findings, and function before it. The pre-event PPS becomes the baseline, the
+trajectory table shows the drop, and the narrative states the pre-event function, the event, and that the
+loss of function happened over days rather than months.
+
 ## Modules
 
 | Route | What it does |

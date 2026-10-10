@@ -1,29 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Field, Section, CopyButton } from '../components/ui.jsx';
+import { Field, Section, CopyButton, Tip, TipsToggle } from '../components/ui.jsx';
 import { listPatients, getPatient, savePatient } from '../store/patients.js';
 import { fmtDate } from '../lib/periods.js';
 
 // "Template plus": every prompt the evidence says gets omitted (prognosis, understanding, decision
 // alignment, time-limited trial, capacity) is a field, and every field is free text.
 const FIELDS = [
-  { id: 'date', label: 'Date of conversation', type: 'date', required: true },
-  { id: 'setting', label: 'Setting', type: 'radio', options: [['inpatient', 'Inpatient'], ['clinic', 'Clinic'], ['home', 'Home / facility'], ['phone', 'Phone / video']] },
-  { id: 'present', label: 'Who was present (roles, not names)', type: 'text', hint: 'e.g., patient, daughter (HCPOA), bedside RN, palliative NP' },
-  { id: 'capacity', label: 'Decision-making capacity', type: 'radio', options: [['yes', 'Patient has capacity for these decisions'], ['partial', 'Capacity limited; patient participated, surrogate confirmed'], ['no', 'Patient lacks capacity; surrogate decision-maker']] },
-  { id: 'surrogate', label: 'Surrogate / HCPOA and basis (document on file?)', type: 'text' },
-  { id: 'illness', label: 'Illness understanding (patient/family, in their words)', type: 'textarea', required: true },
-  { id: 'prognosisShared', label: 'Prognosis communicated and how it was framed', type: 'textarea', required: true, hint: 'e.g., "weeks to short months"; "hoping for the best, preparing for the worst"; whether they wanted to hear it.' },
-  { id: 'values', label: 'What matters most / goals', type: 'textarea', required: true },
-  { id: 'fears', label: 'Fears, worries, trade-offs they would not accept', type: 'textarea' },
-  { id: 'decisions', label: 'Decisions made', type: 'textarea', required: true },
-  { id: 'alignment', label: 'How the decisions align with the stated goals', type: 'textarea', required: true, hint: 'One or two sentences linking plan to values. This is what later clinicians (and auditors) look for and rarely find.' },
-  { id: 'tltIntervention', label: 'Time-limited trial: intervention', type: 'text', hint: 'Leave blank if none.' },
-  { id: 'tltEndpoint', label: 'Time-limited trial: what success and failure look like', type: 'text' },
-  { id: 'tltReview', label: 'Time-limited trial: review date', type: 'date' },
-  { id: 'code', label: 'Code status', type: 'radio', options: [['full', 'Full code'], ['dnr', 'DNR'], ['dnr_dni', 'DNR/DNI'], ['comfort', 'Comfort-focused care'], ['undecided', 'Not decided today']] },
-  { id: 'documents', label: 'Documents completed / to complete (POLST, advance directive, HCPOA)', type: 'text' },
-  { id: 'followup', label: 'Next conversation: when and what to revisit', type: 'text' },
-  { id: 'author', label: 'Author (role)', type: 'text' },
+  { id: 'date', group: 'who', label: 'Date of conversation', type: 'date', required: true },
+  { id: 'setting', group: 'who', label: 'Setting', type: 'radio', options: [['inpatient', 'Inpatient'], ['clinic', 'Clinic'], ['home', 'Home / facility'], ['phone', 'Phone / video']] },
+  { id: 'present', group: 'who', label: 'Who was present (roles, not names)', type: 'text', hint: 'e.g., patient, daughter (HCPOA), bedside RN, palliative NP' },
+  { id: 'capacity', group: 'who', label: 'Decision-making capacity', type: 'radio', options: [['yes', 'Patient has capacity for these decisions'], ['partial', 'Capacity limited; patient participated, surrogate confirmed'], ['no', 'Patient lacks capacity; surrogate decision-maker']] },
+  { id: 'surrogate', group: 'who', label: 'Surrogate / HCPOA and basis (document on file?)', type: 'text' },
+  { id: 'illness', group: 'talk', label: 'Illness understanding (patient/family, in their words)', type: 'textarea', required: true },
+  { id: 'prognosisShared', group: 'talk', label: 'Prognosis communicated and how it was framed', type: 'textarea', required: true, hint: 'e.g., "weeks to short months"; "hoping for the best, preparing for the worst"; whether they wanted to hear it.' },
+  { id: 'values', group: 'talk', label: 'What matters most / goals', type: 'textarea', required: true },
+  { id: 'fears', group: 'talk', label: 'Fears, worries, trade-offs they would not accept', type: 'textarea' },
+  { id: 'decisions', group: 'plan', label: 'Decisions made', type: 'textarea', required: true },
+  { id: 'alignment', group: 'plan', label: 'How the decisions align with the stated goals', type: 'textarea', required: true, hint: 'One or two sentences linking plan to values. This is what later clinicians (and auditors) look for and rarely find.' },
+  { id: 'tltIntervention', group: 'plan', label: 'Time-limited trial: intervention', type: 'text', hint: 'Leave blank if none.' },
+  { id: 'tltEndpoint', group: 'plan', label: 'Time-limited trial: what success and failure look like', type: 'text' },
+  { id: 'tltReview', group: 'plan', label: 'Time-limited trial: review date', type: 'date' },
+  { id: 'code', group: 'plan', label: 'Code status', type: 'radio', options: [['full', 'Full code'], ['dnr', 'DNR'], ['dnr_dni', 'DNR/DNI'], ['comfort', 'Comfort-focused care'], ['undecided', 'Not decided today']] },
+  { id: 'documents', group: 'plan', label: 'Documents completed / to complete (POLST, advance directive, HCPOA)', type: 'text' },
+  { id: 'followup', group: 'plan', label: 'Next conversation: when and what to revisit', type: 'text' },
+  { id: 'author', group: 'plan', label: 'Author (role)', type: 'text' },
 ];
 
 function wrap(text, width) {
@@ -33,7 +33,7 @@ function wrap(text, width) {
   if (line) lines.push(line);
   return lines;
 }
-function box(title, rows, width = 72) {
+function box(title, rows, width = 68) {
   const bar = '+' + '-'.repeat(width - 2) + '+';
   const pad = (s) => '| ' + s.padEnd(width - 4) + ' |';
   const out = [bar, pad(title.toUpperCase()), bar];
@@ -80,26 +80,36 @@ export default function GocNote() {
     await savePatient(p); setSaved(`Saved to ${p.label}.`);
   };
 
+  const GROUPS = [['who', 'Who and where'], ['talk', 'The conversation'], ['plan', 'Decisions and plan']];
   return (
-    <div className="py-4">
-      <h1 className="text-2xl m-0">Goals-of-care note</h1>
-      <p className="hint">Template-plus: prompts for the things that get left out (prognosis, understanding, alignment, time-limited trials, capacity), all free text. Copy the block into the EMR.</p>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div>
+      <div className="page-head">
         <div>
-          <Section title="Conversation">
-            <div className="grid grid-cols-1 gap-3">
-              {FIELDS.map((f) => <Field key={f.id} field={f} value={d[f.id]} onChange={(v) => setD((x) => ({ ...x, [f.id]: v }))} />)}
-            </div>
-          </Section>
+          <div className="eyebrow">Goals of care</div>
+          <h1>Goals-of-care note</h1>
+          <p className="lede">Prompts for what usually gets left out: prognosis as communicated, understanding, alignment of decisions with values, time-limited trials, capacity. All free text; copy the block into the EMR.</p>
         </div>
+        <TipsToggle />
+      </div>
+      <Tip>Write what was actually said, in their words where you can. The <strong>alignment</strong> line is the one later clinicians and auditors look for and rarely find: one or two sentences linking the plan to the stated goals.</Tip>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div>
-          <Section title="Note" right={<CopyButton text={note} label="Copy note" />}>
+          {GROUPS.map(([g, title]) => (
+            <Section key={g} title={title}>
+              <div className="form-grid" style={{ '--cols': g === 'who' ? 2 : 1 }}>
+                {FIELDS.filter((f) => f.group === g).map((f) => <Field key={f.id} field={f} value={d[f.id]} onChange={(v) => setD((x) => ({ ...x, [f.id]: v }))} />)}
+              </div>
+            </Section>
+          ))}
+        </div>
+        <div className="lg:sticky" style={{ top: '72px' }}>
+          <Section title="Note" sub="Updates as you type." right={<CopyButton text={note} label="Copy note" />}>
             {missing.length ? <p className="risk warn text-sm">Still empty: {missing.join('; ')}.</p> : null}
             <pre className="note">{note}</pre>
             {patients.length > 0 && (
               <div className="flex items-end gap-2 mt-3">
-                <div className="wb-field flex-grow"><label>Attach to a stored patient (optional)</label>
-                  <select value={attachTo} onChange={(e) => setAttachTo(e.target.value)}><option value="">—</option>{patients.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
+                <div className="wb-field flex-grow"><label htmlFor="goc-attach">Attach to a stored patient (optional)</label>
+                  <select id="goc-attach" value={attachTo} onChange={(e) => setAttachTo(e.target.value)}><option value="">Select…</option>{patients.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
                 </div>
                 <button className="btn-secondary" disabled={!attachTo} onClick={attach}>Save</button>
               </div>

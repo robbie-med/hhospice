@@ -68,9 +68,22 @@ const MEASURES = [
   { id: 'inr', label: 'INR', unit: '', get: (s) => num(s.dx?.inr), worseIf: 'up' },
 ];
 
+/**
+ * For a sudden catastrophic event there is no prior visit to compare with; the pre-event function the
+ * clinician recorded becomes the baseline so the drop is documented like any other decline.
+ */
+export function syntheticBaseline(current) {
+  const g = current?.general || {};
+  if (g.onset !== 'acute') return null;
+  const pps = num(g.preEventPps);
+  if (pps == null) return null;
+  return { id: 'pre-event', synthetic: true, general: { date: g.eventDate || '', pps }, dx: {} };
+}
+
 /** Compare baseline vs current on every measure present in both. */
 export function trajectory(baseline, current) {
   if (!baseline || !current) return [];
+  const preEvent = !!baseline.synthetic;
   const out = [];
   for (const m of MEASURES) {
     const b = m.get(baseline), c = m.get(current);
@@ -78,7 +91,7 @@ export function trajectory(baseline, current) {
     const change = c - b;
     const worse = m.worseIf === 'down' ? change < 0 : change > 0;
     const fmt = m.fmt || ((v) => `${v}${m.unit}`);
-    out.push({ id: m.id, label: m.label, baseline: { value: b, text: fmt(b), date: baseline.general?.date }, current: { value: c, text: fmt(c), date: current.general?.date }, change, worse, same: change === 0 });
+    out.push({ id: m.id, label: m.label, baseline: { value: b, text: fmt(b), date: baseline.general?.date }, current: { value: c, text: fmt(c), date: current.general?.date }, change, worse, same: change === 0, preEvent });
   }
   return out;
 }
@@ -89,7 +102,9 @@ export function evaluate({ category, current, baseline }) {
   const dx = current?.dx || {};
   const disease = evalRules(category, dx, g);
   const partII = evalPartII(g);
-  const traj = trajectory(baseline, current);
+  const base = baseline || syntheticBaseline(current);
+  const acute = g.onset === 'acute';
+  const traj = trajectory(base, current);
   const worsening = traj.filter((t) => t.worse);
 
   // Part I: decline evidence = checked decline items + worsening measures
@@ -119,7 +134,14 @@ export function evaluate({ category, current, baseline }) {
   if (partII.fnMet === false) push('risk', `${partII.scale} ${partII.score}% is 70% or above. The non-disease-specific baseline requires below 70%; explain why prognosis is still six months or less.`);
   if (partII.score == null) push('warn', 'No PPS or KPS recorded. Every certification should carry a functional score; it is the first thing a reviewer looks for.');
   if (partII.adlMet === false) push('warn', `Only ${partII.adls.length} ADL dependency recorded. The Part II baseline expects two or more.`);
-  if (partI.count === 0) push('risk', 'No decline indicators and no baseline comparison. A narrative without evidence of decline is the most common reason for denial.');
+  if (acute) {
+    if (!g.eventDate) push('warn', 'Sudden event: enter the date of the event. The narrative dates the decline from it.');
+    if (num(g.preEventPps) == null) push('warn', 'Sudden event: record function before the event (PPS). Without it there is no baseline to show the drop from.');
+    if (!g.eventDesc) push('warn', 'Sudden event: name the event with its imaging or exam findings (e.g., infarct territory and volume, GCS, brainstem reflexes).');
+  }
+  if (partI.count === 0) push('risk', acute
+    ? 'No change from the pre-event baseline is documented yet. Even after a sudden event, the reviewer needs to see function before versus now.'
+    : 'No decline indicators and no baseline comparison. A narrative without evidence of decline is the most common reason for denial.');
   if (comorbidities.length && !partIII.detail) push('warn', 'Comorbidities are listed without explaining how each worsens the prognosis.');
   if (!g.findings) push('warn', 'No patient-specific findings entered for this visit. Add exam, symptoms or caregiver report so the narrative is not a template.');
   if (typeof category.risks === 'function') {
@@ -128,10 +150,14 @@ export function evaluate({ category, current, baseline }) {
 
   // How many patient-specific data points exist (used to warn about generic narratives)
   let specificity = 0;
-  for (const k of ['pps', 'kps', 'weightKg', 'weightLossPct6mo', 'macCm', 'albumin', 'hosp6mo', 'vitals', 'findings', 'comorbidityDetail']) if (g[k] != null && g[k] !== '') specificity++;
+  for (const k of ['pps', 'kps', 'weightKg', 'weightLossPct6mo', 'macCm', 'albumin', 'hosp6mo', 'vitals', 'findings', 'comorbidityDetail', 'eventDate', 'eventDesc', 'preEventPps', 'preEventDesc']) if (g[k] != null && g[k] !== '') specificity++;
   for (const k of Object.keys(dx)) { const v = dx[k]; if (v != null && v !== '' && !(Array.isArray(v) && !v.length)) specificity++; }
   specificity += worsening.length;
   if (specificity < 5) push('warn', 'Few patient-specific data points. Expect a reviewer to read the narrative as boilerplate.');
 
-  return { category: { id: category.id, label: category.label, lcdSection: category.lcdSection }, disease, partII, partI, partIII, trajectory: traj, overall, risks, specificity };
+  return {
+    category: { id: category.id, label: category.label, lcdSection: category.lcdSection },
+    disease, partII, partI, partIII, trajectory: traj, overall, risks, specificity,
+    acute, baselineKind: base ? (base.synthetic ? 'pre-event' : 'prior') : null,
+  };
 }

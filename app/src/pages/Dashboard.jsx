@@ -1,30 +1,83 @@
 import { Link } from 'react-router-dom';
-import { ClipboardCheck, Users, MessageSquareHeart, Activity, Clock, ArrowRight } from 'lucide-react';
+import { ClipboardCheck, RefreshCw, Stethoscope, Zap, MessageSquareHeart, Users, Activity, Clock } from 'lucide-react';
+
+const STARTS = [
+  {
+    to: '/certify?start=initial', icon: ClipboardCheck, primary: true,
+    title: 'Initial certification',
+    desc: 'New admission. Check the disease guideline, the functional baseline and the election-date math, then draft the certification narrative.',
+    need: 'Diagnosis, PPS or KPS, ADLs, disease-specific findings, election date',
+  },
+  {
+    to: '/certify?start=recert', icon: RefreshCw,
+    title: 'Recertification',
+    desc: 'Benefit period 2 onward. The narrative compares this assessment with the previous one so the decline is explicit, not asserted.',
+    need: 'A prior assessment to compare against; F2F date from period 3',
+  },
+  {
+    to: '/certify?start=f2f', icon: Stethoscope,
+    title: 'Face-to-face attestation',
+    desc: 'Window check for the 30 days before the period starts, and an attestation built from the encounter findings.',
+    need: 'Encounter date, who performed it, findings',
+  },
+  {
+    to: '/certify?start=acute', icon: Zap,
+    title: 'Sudden catastrophic event',
+    desc: 'A large stroke, anoxic injury or catastrophic bleed in someone who was well. Decline is measured from the pre-event baseline, not from serial visits.',
+    need: 'Date of the event, function before it, imaging or exam findings, current intake',
+  },
+  {
+    to: '/goc', icon: MessageSquareHeart,
+    title: 'Goals-of-care note',
+    desc: 'Prompts for the things that get left out: prognosis as communicated, understanding, alignment of decisions with values, time-limited trials, capacity.',
+    need: 'Who was present, what was said, what was decided',
+  },
+];
 
 const TOOLS = [
-  { path: '/certify', name: 'Certify', title: 'Eligibility, CTI and recertification narratives, F2F attestation', desc: 'All LCD disease guidelines plus the non-disease-specific pathway. Benefit-period and face-to-face timing checks. Narratives composed only from what you enter, with denial-risk flags.', icon: ClipboardCheck, primary: true },
-  { path: '/patients', name: 'Patients', title: 'Decline tracker', desc: 'Dated assessments per pseudonymous patient so recertifications describe the trajectory (PPS, weight, albumin, ADLs, FAST…) automatically. Export/import JSON.', icon: Users },
-  { path: '/goc', name: 'GOC note', title: 'Goals-of-care note (template plus)', desc: 'Prompts for prognosis communicated, understanding, decision alignment, time-limited trials and capacity. Copy-paste block for the EMR.', icon: MessageSquareHeart },
-  { path: '/amorm', name: 'Methadone', title: 'Methadone rotation (AMORM)', desc: 'Five published conversion models side by side, QTc checklist, day-by-day switchover schedule.', icon: Activity },
-  { path: '/ttbdp', name: 'Time-to-benefit', title: 'Deprescribing by time-to-benefit (TTB-DP)', desc: 'Compare each preventive drug\'s time-to-benefit with the patient\'s prognosis.', icon: Clock },
+  { to: '/patients', icon: Users, name: 'Patients and export', desc: 'Stored assessments, decline tracker, JSON export and import' },
+  { to: '/amorm', icon: Activity, name: 'Methadone rotation', desc: 'Five conversion models, QTc checklist, switchover schedule' },
+  { to: '/ttbdp', icon: Clock, name: 'Time-to-benefit deprescribing', desc: 'Preventive drugs against the patient’s prognosis' },
 ];
 
 export default function Dashboard() {
   return (
-    <div className="py-6">
-      <div className="text-center mb-10">
-        <h1 className="text-3xl mb-3">Hospice Certification Workbench</h1>
-        <p className="text-lg text-text-muted max-w-2xl mx-auto">Offline, physician-facing, no login. Documentation that survives an audit, written from your findings.</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {TOOLS.map((t) => (
-          <div key={t.path} className={`glass-card p-6 flex flex-col ${t.primary ? 'md:col-span-2 lg:col-span-1 border-blue-400' : ''}`}>
-            <div className="flex items-center gap-3 mb-2"><t.icon size={28} className="text-primary-color" /><h2 className="text-xl m-0">{t.name}</h2></div>
-            <h3 className="text-base font-medium mb-2">{t.title}</h3>
-            <p className="text-text-muted text-sm mb-6 flex-grow">{t.desc}</p>
-            <Link to={t.path} className="btn-primary mt-auto justify-between no-underline">Open <ArrowRight size={18} /></Link>
-          </div>
+    <div>
+      <section className="hero">
+        <div className="eyebrow">For hospice and palliative physicians, nurse practitioners and IDG</div>
+        <h1>Documentation that survives the audit.</h1>
+        <p>
+          Eligibility against the Medicare hospice LCDs, certification and recertification narratives composed from your
+          own findings, face-to-face attestations and a decline tracker. Offline, in your browser, no login.
+        </p>
+      </section>
+
+      <h2 className="home-h2">Start with what you are doing today</h2>
+      <div className="start-grid">
+        {STARTS.map((s) => (
+          <Link key={s.to} to={s.to} className={`start-card${s.primary ? ' primary' : ''}`}>
+            <span className="ic"><s.icon size={18} /></span>
+            <h3>{s.title}</h3>
+            <p>{s.desc}</p>
+            <div className="need"><strong>You will need:</strong> {s.need}</div>
+          </Link>
         ))}
+      </div>
+
+      <h2 className="home-h2">Also here</h2>
+      <div className="tool-row">
+        {TOOLS.map((t) => (
+          <Link key={t.to} to={t.to} className="tool-link">
+            <t.icon size={20} />
+            <div><b>{t.name}</b><span>{t.desc}</span></div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="how">
+        <div><div className="n">1 · Enter</div><h3>Record what you found</h3><p>PPS, ADLs, weights, labs, the disease-specific items the LCD asks for, and your own exam and caregiver report.</p></div>
+        <div><div className="n">2 · Check</div><h3>See each criterion as met, unmet or missing</h3><p>Every LCD rule is evaluated separately, with the benefit-period and face-to-face timing alongside, and denial-pattern flags.</p></div>
+        <div><div className="n">3 · Sign</div><h3>Copy a narrative that is yours</h3><p>Composed only from what you entered, phrased differently for every patient. Edit it, then sign it.</p></div>
       </div>
     </div>
   );

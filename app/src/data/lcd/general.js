@@ -3,6 +3,13 @@ import { PPS, KPS, ADLS, ADL_LABEL, DECLINE_ITEMS, COMORBIDITIES } from '../scal
 // Fields captured at EVERY assessment (snapshot), regardless of disease. Parts I–III of the LCD.
 export const GENERAL_FIELDS = [
   { id: 'date', label: 'Assessment date', type: 'date', required: true },
+  // Course of illness. A sudden catastrophic event has no months-long decline curve; the drop from the
+  // pre-event baseline is the evidence, so it is captured here and used as a synthetic baseline.
+  { id: 'onset', label: 'Course of illness', type: 'radio', options: [['progressive', 'Progressive decline over months'], ['acute', 'Sudden catastrophic event (previously stable or independent)']] },
+  { id: 'eventDate', label: 'Date of the event', type: 'date' },
+  { id: 'eventDesc', label: 'The event', type: 'text', placeholder: 'e.g., large left MCA infarct with hemorrhagic conversion; anoxic injury after cardiac arrest' },
+  { id: 'preEventPps', label: 'Function before the event (PPS)', type: 'select', options: PPS.map(([v, l]) => [String(v), `${v}% — ${l}`]), unit: '%' },
+  { id: 'preEventDesc', label: 'Function before the event, in words', type: 'text', placeholder: 'e.g., independent in all ADLs, living alone, still driving' },
   { id: 'pps', label: 'Palliative Performance Scale (PPS)', type: 'select', options: PPS.map(([v, l]) => [String(v), `${v}% — ${l}`]), unit: '%' },
   { id: 'kps', label: 'Karnofsky (KPS), if used instead of PPS', type: 'select', options: KPS.map(([v, l]) => [String(v), `${v}% — ${l}`]), unit: '%' },
   { id: 'adls', label: 'ADLs requiring assistance', type: 'checks', options: ADLS.map((a) => [a, ADL_LABEL[a]]), hint: 'Part II baseline needs dependence in 2 or more.' },

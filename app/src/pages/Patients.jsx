@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, Upload, Trash2 } from 'lucide-react';
+import { Download, Upload, Trash2, Users } from 'lucide-react';
 import { listPatients, deletePatient, exportAll, importAll, sortedSnapshots } from '../store/patients.js';
 import { categoryById } from '../data/lcd/index.js';
-import { Section } from '../components/ui.jsx';
+import { fmtDate } from '../lib/periods.js';
+import { Section, Tip } from '../components/ui.jsx';
 
 export default function Patients() {
   const [patients, setPatients] = useState([]);
@@ -37,35 +38,48 @@ export default function Patients() {
   };
 
   return (
-    <div className="py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div><h1 className="text-2xl m-0">Patients</h1><p className="hint m-0">Stored in this browser only (IndexedDB). Export before switching devices or clearing site data.</p></div>
-        <div className="flex gap-2">
-          <button className="btn-secondary" onClick={doExport}><Download size={16} /> Export JSON</button>
-          <button className="btn-secondary" onClick={() => fileRef.current?.click()}><Upload size={16} /> Import JSON</button>
+    <div>
+      <div className="page-head">
+        <div><h1>Patients</h1><p className="lede">Stored in this browser only. Export before switching devices or clearing site data.</p></div>
+        <div className="flex gap-2 flex-wrap">
+          <button className="btn-secondary" onClick={doExport} disabled={!patients.length}><Download size={15} /> Export JSON</button>
+          <button className="btn-secondary" onClick={() => fileRef.current?.click()}><Upload size={15} /> Import JSON</button>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={doImport} />
-          <Link to="/certify" className="btn-primary no-underline">+ New patient</Link>
+          <Link to="/certify" className="btn-primary">New patient</Link>
         </div>
       </div>
       {msg && <p className="text-sm mb-3">{msg}</p>}
+      {patients.length > 0 && <Tip>Each row is a patient with dated assessments. Open one to add this period's assessment; the recertification narrative compares it with the last.</Tip>}
       <Section>
-        {patients.length === 0 ? <p className="hint m-0">No patients yet. Start one from the certification workbench.</p> : (
-          <table className="w-full text-sm border-collapse">
-            <thead><tr className="text-left text-text-muted"><th className="py-2">Label</th><th>Guideline</th><th>Election</th><th>Assessments</th><th>Latest PPS</th><th>Updated</th><th></th></tr></thead>
-            <tbody>
-              {patients.map((p) => { const s = sortedSnapshots(p); const last = s.at(-1); return (
-                <tr key={p.id} className="border-t border-gray-200">
-                  <td className="py-2"><Link to={`/certify?p=${p.id}`}>{p.label || '(no label)'}</Link></td>
-                  <td>{categoryById(p.category).label}</td>
-                  <td>{p.admissionDate || ''}</td>
-                  <td>{s.length}{last ? ` (last ${last.general?.date || ''})` : ''}</td>
-                  <td>{last?.general?.pps ? `${last.general.pps}%` : ''}</td>
-                  <td>{String(p.updatedAt || '').slice(0, 10)}</td>
-                  <td className="text-right"><button className="bg-transparent border-0 cursor-pointer text-danger" title="Delete" onClick={() => remove(p)}><Trash2 size={16} /></button></td>
-                </tr>
-              ); })}
-            </tbody>
-          </table>
+        {patients.length === 0 ? (
+          <div className="empty">
+            <Users size={32} />
+            <h3>No patients yet</h3>
+            <p>Start a certification and the patient appears here once it has a label.</p>
+            <div className="flex gap-2 justify-center flex-wrap">
+              <Link to="/certify?start=initial" className="btn-primary">Initial certification</Link>
+              <Link to="/certify?start=recert" className="btn-secondary">Recertification</Link>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead><tr><th>Label</th><th>Guideline</th><th>Election</th><th>Assessments</th><th>Latest PPS</th><th>Updated</th><th></th></tr></thead>
+              <tbody>
+                {patients.map((p) => { const s = sortedSnapshots(p); const last = s.at(-1); return (
+                  <tr key={p.id}>
+                    <td><Link to={`/certify?p=${p.id}`} className="font-medium">{p.label || '(no label)'}</Link></td>
+                    <td>{categoryById(p.category).label}</td>
+                    <td>{fmtDate(p.admissionDate)}</td>
+                    <td>{s.length}{last ? <span className="text-muted"> · last {fmtDate(last.general?.date)}</span> : ''}</td>
+                    <td>{last?.general?.pps ? `${last.general.pps}%` : <span className="text-muted">—</span>}</td>
+                    <td>{fmtDate(String(p.updatedAt || '').slice(0, 10))}</td>
+                    <td className="text-right"><button className="btn-ghost btn-sm btn-danger-ghost" title="Delete" onClick={() => remove(p)}><Trash2 size={15} /></button></td>
+                  </tr>
+                ); })}
+              </tbody>
+            </table>
+          </div>
         )}
       </Section>
     </div>
