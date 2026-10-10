@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Matte Light Theme */
+  --bg: #F4F5F7;
+  --card: #FFFFFF;
+  --ink: #111827;
+  --muted: #6B7280;
+  --accent: #2C3E50; /* Matte Slate/Navy */
+  --accent-hover: #1A252F;
+  --danger: #C0392B; /* Matte Red */
+  --ok: #27AE60;     /* Matte Green */
+  --warn: #D35400;   /* Matte Amber/Orange */
+  --line: #E2E4E9;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: #fff;
+  }
+  .noprint {
+    display: none !important;
+  }
+}

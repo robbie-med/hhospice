@@ -1,0 +1,154 @@
+.verdict-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.burden-summary {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 1rem 1.25rem;
+}
+
+.burden-summary h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.burden-summary p {
+  font-size: 0.85rem;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.burden-summary ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.burden-summary ul li {
+  margin-bottom: 0.25rem;
+}
+
+.verdict-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.verdict-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.verdict-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.verdict-info strong {
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.verdict-stats {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.citation {
+  font-size: 0.75rem;
+  color: var(--muted);
+  opacity: 0.8;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.verdict-badge {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  margin-top: 0.2rem;
+}
+
+/* Specific verdict styles */
+.v-stop {
+  background: #FEF2F2;
+  border-color: #FECACA;
+}
+.v-stop .badge {
+  background: var(--danger);
+  color: #fff;
+}
+.v-stop strong {
+  color: #991B1B;
+}
+
+.v-reconsider {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+.v-reconsider .badge {
+  background: var(--warn);
+  color: #fff;
+}
+.v-reconsider strong {
+  color: #92400E;
+}
+
+.v-continue {
+  background: #F0FDF4;
+  border-color: #BBF7D0;
+}
+.v-continue .badge {
+  background: var(--ok);
+  color: #fff;
+}
+.v-continue strong {
+  color: #166534;
+}
+
+@media (max-width: 600px) {
+  .verdict-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .verdict-badge {
+    align-self: flex-start;
+  }
+}
+
+@media print {
+  .verdict-row {
+    break-inside: avoid;
+    border: 1px solid var(--line);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .burden-summary {
+    border: 1px solid var(--line);
+    break-inside: avoid;
+  }
+}

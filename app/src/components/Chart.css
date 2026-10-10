@@ -1,0 +1,23 @@
+.ttb-chart {
+  display: block;
+  width: 100%;
+  min-width: 620px;
+  height: auto;
+  font-family: inherit;
+}
+
+.survival-curve {
+  transition: d 0.4s ease-in-out;
+}
+
+.ttb-bar-group {
+  transition: all 0.3s ease;
+}
+
+@media print {
+  .ttb-chart rect[fill="#FDEFEF"] {
+    fill: #FDEFEF !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

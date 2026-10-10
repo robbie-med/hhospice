@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMORM — Assisted Methadone Opioid Rotation Module</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --ink: #1c2733;
+    --muted: #5b6b7a;
+    --line: #d9e0e6;
+    --accent: #0b5d6b;
+    --accent-soft: #e3f1f3;
+    --warn: #a15c00;
+    --warn-soft: #fdf1de;
+    --danger: #a82323;
+    --danger-soft: #fbe7e7;
+    --ok: #1d6b35;
+    --ok-soft: #e5f4ea;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 1.2rem 1.5rem;
+  }
+  header h1 { margin: 0; font-size: 1.35rem; }
+  header p { margin: .3rem 0 0; opacity: .9; font-size: .9rem; }
+  main { max-width: 1080px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+  section.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin: 1rem 0;
+  }
+  h2 { font-size: 1.1rem; margin: 0 0 .2rem; color: var(--accent); }
+  h2 .step {
+    display: inline-block; background: var(--accent); color: #fff;
+    border-radius: 50%; width: 1.5rem; height: 1.5rem; text-align: center;
+    line-height: 1.5rem; font-size: .85rem; margin-right: .5rem;
+  }
+  .hint { color: var(--muted); font-size: .85rem; margin: .2rem 0 .9rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { border: 1px solid var(--line); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #eef2f5; }
+  input[type="number"], input[type="text"], select {
+    padding: .35rem .45rem; border: 1px solid var(--line); border-radius: 6px;
+    font-size: .9rem; width: 100%; min-width: 70px;
+  }
+  button {
+    cursor: pointer; border: 1px solid var(--accent); background: var(--accent);
+    color: #fff; border-radius: 6px; padding: .45rem .9rem; font-size: .9rem;
+  }
+  button.secondary { background: #fff; color: var(--accent); }
+  button.small { padding: .2rem .55rem; font-size: .8rem; }
+  .banner {
+    border-radius: 8px; padding: .9rem 1.1rem; margin: 1rem 0; font-size: .92rem;
+  }
+  .banner.danger { background: var(--danger-soft); border: 1px solid var(--danger); }
+  .banner.warn { background: var(--warn-soft); border: 1px solid var(--warn); }
+  .banner.ok { background: var(--ok-soft); border: 1px solid var(--ok); }
+  .banner strong { display: block; margin-bottom: .25rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 1rem; }
+  .row > div { flex: 1 1 220px; }
+  label.field { display: block; font-size: .85rem; margin-bottom: .6rem; }
+  label.field span { display: block; color: var(--muted); margin-bottom: .15rem; }
+  label.check { display: flex; gap: .5rem; align-items: flex-start; font-size: .88rem; margin-bottom: .45rem; }
+  label.check input { margin-top: .2rem; }
+  .result-big {
+    font-size: 1.6rem; font-weight: 700; color: var(--accent);
+  }
+  .pill {
+    display: inline-block; border-radius: 999px; padding: .1rem .7rem;
+    font-size: .8rem; font-weight: 600;
+  }
+  .pill.low { background: var(--ok-soft); color: var(--ok); }
+  .pill.mod { background: var(--warn-soft); color: var(--warn); }
+  .pill.high { background: var(--danger-soft); color: var(--danger); }
+  .hidden { display: none; }
+  .mono { font-variant-numeric: tabular-nums; }
+  ul.tight { margin: .3rem 0; padding-left: 1.2rem; }
+  ul.tight li { margin-bottom: .2rem; font-size: .88rem; }
+  .refs { font-size: .8rem; color: var(--muted); }
+  .refs li { margin-bottom: .3rem; }
+  footer { font-size: .78rem; color: var(--muted); text-align: center; padding: 1rem; }
+  @media print {
+    header, #gate, .noprint { display: none !important; }
+    body { background: #fff; }
+    section.card { border: none; padding: .4rem 0; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>AMORM — Assisted Methadone Opioid Rotation Module</h1>
+  <p>Evidence-based methadone rotation: opioid stack → oMEDD → conversion models → cross-taper schedule with QTc screening.</p>
+</header>
+
+<main>
+
+<!-- ============ SAFETY GATE ============ -->
+<section class="card" id="gate">
+  <div class="banner danger">
+    <strong>⚠ Clinical decision support — not a prescribing tool</strong>
+    Methadone has a long, variable half-life (8–59 h), non-linear equianalgesic ratios, and a real risk of delayed respiratory
+    depression and QTc prolongation / torsades de pointes. Published conversion models can diverge by a factor of 3 or more at
+    high oMEDD. Every output of this tool must be independently verified and individualised by a prescriber experienced in
+    methadone initiation. This tool does not replace specialist palliative care / pain consultation, and says nothing about
+    whether methadone is appropriate for a given patient.
+  </div>
+  <label class="check">
+    <input type="checkbox" id="ack">
+    <span>I am a qualified clinician. I understand the above, and I will independently verify all doses before prescribing.</span>
+  </label>
+  <button id="unlock" disabled>Unlock calculator</button>
+</section>
+
+<div id="app" class="hidden">
+
+<!-- ============ STEP 1: OPIOID STACK ============ -->
+<section class="card">
+  <h2><span class="step">1</span>Current opioid stack → oral morphine equivalent daily dose (oMEDD)</h2>
+  <p class="hint">Add every scheduled opioid the patient currently takes (do not include breakthrough-only use here).
+  Conversion factors follow CDC MME / standard equianalgesic tables and are shown per row for transparency.</p>
+  <table id="stackTable">
+    <thead>
+      <tr>
+        <th style="width:26%">Opioid / route</th>
+        <th style="width:16%">Dose</th>
+        <th style="width:18%">Frequency</th>
+        <th style="width:22%">Factor</th>
+        <th style="width:12%">MME/day</th>
+        <th class="noprint"></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <p class="noprint"><button class="secondary small" id="addRow">+ Add opioid</button></p>
+  <p>Total <strong>oMEDD</strong>: <span class="result-big mono" id="omeddTotal">0</span> mg oral morphine / day</p>
+  <div class="banner warn hidden" id="omeddHigh">
+    <strong>High-dose territory (&gt; 300 mg/day)</strong>
+    All conversion models become markedly more conservative and diverge widely here. Specialist supervision is strongly advised.
+  </div>
+</section>
+
+<!-- ============ STEP 2: MODEL SELECTION ============ -->
+<section class="card">
+  <h2><span class="step">2</span>Conversion model</h2>
+  <p class="hint">All models below are applied to the oMEDD from Step 1. The comparison table shows how much the published
+  models disagree — at high oMEDD this divergence is itself the key safety information. Choose one model to drive the schedule.</p>
+
+  <table id="modelTable">
+    <thead>
+      <tr>
+        <th style="width:4%"></th>
+        <th style="width:20%">Model</th>
+        <th style="width:26%">Ratio at this oMEDD</th>
+        <th style="width:16%">Methadone TDD</th>
+        <th style="width:34%">Notes</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <label class="field" style="max-width:340px; margin-top:1rem;">
+    <span>Additional safety reduction for incomplete cross-tolerance</span>
+    <select id="safetyCut">
+      <option value="0.25" selected>Reduce by 25% (recommended default)</option>
+      <option value="0">None — use model output as-is</option>
+      <option value="0.5">Reduce by 50% (frail / elderly / high risk)</option>
+    </select>
+  </label>
+  <div id="modelSummary"></div>
+</section>
+
+<!-- ============ STEP 3: QTC CHECKLIST ============ -->
+<section class="card">
+  <h2><span class="step">3</span>QTc &amp; safety checklist</h2>
+  <p class="hint">Based on the Chou et al. 2014 consensus recommendations and standard risk factors for drug-induced
+  QT prolongation. This gates the schedule in Step 4.</p>
+
+  <div class="row">
+    <div>
+      <label class="field">
+        <span>Baseline QTc (ms), if ECG available</span>
+        <input type="number" id="qtc" min="0" max="700" placeholder="e.g. 440">
+      </label>
+      <label class="check"><input type="checkbox" class="rf" data-w="2" id="rfFemale"><span>Female sex</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="2"><span>Age &gt; 65 years</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="2"><span>Known congenital long-QT syndrome or family history of sudden death &lt; 40 y</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="2"><span>Prior syncope / documented torsades or ventricular arrhythmia</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="1"><span>Structural heart disease, heart failure, or LVH</span></label>
+    </div>
+    <div>
+      <label class="check"><input type="checkbox" class="rf" data-w="2"><span>Electrolyte disturbance (K⁺ low, Mg²⁺ low, Ca²⁺ low) or active vomiting/diarrhoea</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="1"><span>Bradycardia (&lt; 50 bpm)</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="2"><span>Concurrent QTc-prolonging drugs (e.g. haloperidol, ondansetron, TCAs, quetiapine, macrolides, azole antifungals, amiodarone)</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="1"><span>CYP3A4 / CYP2B6 inhibitors or inducers (fluconazole, clarithromycin, carbamazepine, some ART) — alters methadone levels</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="1"><span>Hepatic or renal impairment</span></label>
+      <label class="check"><input type="checkbox" class="rf" data-w="1"><span>Concomitant benzodiazepines, gabapentinoids or other sedatives (respiratory risk)</span></label>
+    </div>
+  </div>
+
+  <div id="qtcResult"></div>
+</section>
+
+<!-- ============ STEP 4: SCHEDULE ============ -->
+<section class="card">
+  <h2><span class="step">4</span>Cross-taper schedule</h2>
+  <p class="hint">Strategy is independent of the conversion model. “3-day gradual” follows the Edmonton-style thirds taper;
+  “rapid switch” is the stop-and-go approach; “Morley–Makin PRN” is the fixed-PRN titration method.</p>
+
+  <label class="field" style="max-width:340px;">
+    <span>Switch strategy</span>
+    <select id="strategy">
+      <option value="gradual">3-day gradual cross-taper (Edmonton-style)</option>
+      <option value="rapid">Rapid switch (stop-and-go, day 1)</option>
+      <option value="prn">Morley–Makin fixed-PRN titration (5-day)</option>
+    </select>
+  </label>
+
+  <div id="scheduleGate"></div>
+  <div id="scheduleOut"></div>
+
+  <p class="noprint" style="margin-top:1rem;"><button onclick="window.print()">🖨 Print schedule</button></p>
+</section>
+
+<!-- ============ REFERENCES ============ -->
+<section class="card refs">
+  <h2>Evidence base &amp; references</h2>
+  <ul>
+    <li>Ripamonti C, et al. Switching from morphine to oral methadone in treating cancer pain: what is the equianalgesic dose ratio? <em>J Clin Oncol</em> 1998;16:3216–21. (Tiers 30–90 mg → 4:1; 90–300 → 6:1; &gt;300 → 8:1.)</li>
+    <li>Ayonrinde OT, Bridge DT. The rediscovery of methadone for cancer pain management. <em>Med J Aust</em> 2000;173:536–40. (Tiers &lt;100 → 3:1; 101–300 → 5:1; 301–600 → 10:1; 601–800 → 12:1; 801–1000 → 15:1; &gt;1000 → 20:1; loading dose 25–50% of TDD on days 1–2.)</li>
+    <li>Mercadante S, et al. Switching from morphine to methadone to improve analgesia and tolerability in cancer patients. <em>J Clin Oncol</em> 2001;19:2898–904. (Tiers 30–90 → 4:1; 90–300 → 8:1; &gt;300 → 12:1.)</li>
+    <li>Morley J, Makin M. The use of methadone in cancer pain poorly responsive to other opioids. <em>Pain Rev</em> 1998;5:51–8. (Fixed PRN: 10% of daily oMEDD, max 30 mg, q3h PRN ×5 days; day 6 maintenance = mean of days 4–5, given BID.)</li>
+    <li>Bruera E, et al. / Edmonton protocol 3-day rotation; summarised in Palat G, et al. Practical guide for using methadone in pain and palliative care practice. <em>Indian J Palliat Care</em> 2018.</li>
+    <li>Chou R, et al. Methadone safety: a clinical practice guideline. <em>J Pain</em> 2014;15:321–37. (QTc screening and ECG monitoring recommendations.)</li>
+    <li>McPherson ML. <em>Demystifying Opioid Conversion Calculations</em>, 2nd ed. ASHP, 2018.</li>
+    <li>Parsons HA, et al. A review of common methods to convert morphine to methadone. <em>Can J Hosp Pharm</em> 2012;65(5):355–61 (PMC3715153) — source of the side-by-side model table used here.</li>
+  </ul>
+  <p>MME conversion factors: CDC guideline conversion factors (morphine PO 1; oxycodone PO 1.5; hydromorphone PO 4;
+  codeine 0.15; tramadol 0.1; tapentadol 0.4; fentanyl patch mcg/h × 2.4; buprenorphine patch mcg/h × 12.6;
+  morphine IV/SC × 3; hydromorphone IV/SC × 20; fentanyl IV infusion mcg/h × 7.2). Local formularies (e.g. ANZCA) may differ —
+  verify against your own institution's table before prescribing.</p>
+</section>
+
+</div><!-- /app -->
+
+<footer>
+  AMORM is free and open-source clinical decision support. No patient data leaves this page — all computation happens locally in your browser.
+  It is not a medical device and is not a substitute for clinical judgement.
+</footer>
+</main>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   DATA — all clinical parameters live here for auditability.
+   ===================================================================== */
+
+// MME factors: multiplier converting the drug's TOTAL DAILY dose to oral morphine mg/day.
+const OPIOIDS = [
+  { id: "mor_po",  label: "Morphine — oral (mg/dose)",              kind: "dose",  factor: 1,    factorText: "× 1 (reference)" },
+  { id: "mor_iv",  label: "Morphine — IV/SC (mg/dose)",             kind: "dose",  factor: 3,    factorText: "× 3 (IV→PO)" },
+  { id: "oxy_po",  label: "Oxycodone — oral (mg/dose)",             kind: "dose",  factor: 1.5,  factorText: "× 1.5" },
+  { id: "hyd_po",  label: "Hydromorphone — oral (mg/dose)",         kind: "dose",  factor: 4,    factorText: "× 4" },
+  { id: "hyd_iv",  label: "Hydromorphone — IV/SC (mg/dose)",        kind: "dose",  factor: 20,   factorText: "× 20 (IV→PO)" },
+  { id: "cod_po",  label: "Codeine — oral (mg/dose)",               kind: "dose",  factor: 0.15, factorText: "× 0.15" },
+  { id: "tra_po",  label: "Tramadol — oral (mg/dose)",              kind: "dose",  factor: 0.1,  factorText: "× 0.1" },
+  { id: "tap_po",  label: "Tapentadol — oral (mg/dose)",            kind: "dose",  factor: 0.4,  factorText: "× 0.4" },
+  { id: "fen_td",  label: "Fentanyl — transdermal patch (mcg/h)",   kind: "patch", factor: 2.4,  factorText: "mcg/h × 2.4" },
+  { id: "fen_iv",  label: "Fentanyl — IV infusion (mcg/h)",         kind: "patch", factor: 7.2,  factorText: "mcg/h × 7.2 (≈100 mcg IV ≈ 30 mg PO morphine)" },
+  { id: "bup_td",  label: "Buprenorphine — transdermal (mcg/h)",    kind: "patch", factor: 12.6, factorText: "mcg/h × 12.6" }
+];
+
+const FREQS = [
+  { v: 6,   label: "q4h (6×/day)" },
+  { v: 4,   label: "q6h (4×/day)" },
+  { v: 3,   label: "q8h (3×/day)" },
+  { v: 2,   label: "q12h (2×/day)" },
+  { v: 1,   label: "Once daily" }
+];
+
+/* Conversion models. Each takes oMEDD (mg/day) and returns
+   { ratioLabel, tdd (methadone mg/day, unrounded), note }.
+   Morley–Makin is PRN-based and returns a per-dose amount instead. */
+const MODELS = [
+  {
+    id: "edmonton", name: "Edmonton (3-day fixed protocol)",
+    calc(m) {
+      // Classic Bruera/Edmonton: fixed PRN dosing, not ratio-based.
+      const perDose = m >= 300 ? 10 : 5;
+      return {
+        ratioLabel: "Fixed protocol (not ratio-based)",
+        tdd: null,
+        prn: { dose: perDose, freq: "q4h PRN", maxDay: perDose * 5 },
+        note: "Day 1: reduce prior opioid by ⅓; methadone " + perDose + " mg q4h PRN (max " + (perDose*5) + " mg/day). Days 2–3 are built from actual day-1 use (see schedule)."
+      };
+    }
+  },
+  {
+    id: "ripamonti", name: "Ripamonti 1998",
+    calc(m) {
+      let r;
+      if (m < 30)       r = { ratio: 2,  tier: "< 30 mg → 2:1 (extrapolated — model validated only ≥ 30 mg; use great caution)" };
+      else if (m < 90)  r = { ratio: 4,  tier: "30–90 mg → 4:1" };
+      else if (m < 300) r = { ratio: 6,  tier: "90–300 mg → 6:1" };
+      else              r = { ratio: 8,  tier: "> 300 mg → 8:1" };
+      return { ratioLabel: r.tier, tdd: m / r.ratio,
+        note: "Prospective cancer-pain study; achieved median ratios after switch were 3.7 / 7.75 / 12.25 : 1. Caution near tier cut-points." };
+    }
+  },
+  {
+    id: "ayonrinde", name: "Ayonrinde & Bridge 2000",
+    calc(m) {
+      let ratio, tier;
+      if (m <= 100)       { ratio = 3;  tier = "≤ 100 mg → 3:1"; }
+      else if (m <= 300)  { ratio = 5;  tier = "101–300 mg → 5:1"; }
+      else if (m <= 600)  { ratio = 10; tier = "301–600 mg → 10:1"; }
+      else if (m <= 800)  { ratio = 12; tier = "601–800 mg → 12:1"; }
+      else if (m <= 1000) { ratio = 15; tier = "801–1000 mg → 15:1"; }
+      else                { ratio = 20; tier = "> 1000 mg → 20:1"; }
+      return { ratioLabel: tier, tdd: m / ratio,
+        note: "Includes optional loading dose of 25–50% of TDD on days 1–2. Most aggressive model at low oMEDD, among the most conservative > 1000 mg." };
+    }
+  },
+  {
+    id: "mercadante", name: "Mercadante 2001",
+    calc(m) {
+      let r;
+      if (m < 30)       r = { ratio: 2,  tier: "< 30 mg → 2:1 (extrapolated; caution)" };
+      else if (m < 90)  r = { ratio: 4,  tier: "30–90 mg → 4:1" };
+      else if (m < 300) r = { ratio: 8,  tier: "90–300 mg → 8:1" };
+      else              r = { ratio: 12, tier: "> 300 mg → 12:1" };
+      return { ratioLabel: r.tier, tdd: m / r.ratio,
+        note: "More conservative than Ripamonti above 90 mg/day." };
+    }
+  },
+  {
+    id: "morley", name: "Morley–Makin 1998",
+    calc(m) {
+      const perDose = Math.min(m * 0.1, 30);
+      return {
+        ratioLabel: "Fixed PRN: 10% of oMEDD (max 30 mg)",
+        tdd: null,
+        prn: { dose: perDose, freq: "q3h PRN", maxDay: perDose * 8 },
+        note: "Stop prior opioid. Offer " + fmt(perDose) + " mg q3h PRN for 5 days; day-6 maintenance = mean of days 4–5 actual use, given BID. Resource-intensive; best suited to inpatient settings."
+      };
+    }
+  }
+];
+
+/* =====================================================================
+   STATE + RENDERING
+   ===================================================================== */
+
+const $ = id => document.getElementById(id);
+let stackRows = [];
+let selectedModel = "ripamonti";
+let specialistOverride = false;
+
+function fmt(n, dp) {
+  if (n == null || isNaN(n)) return "—";
+  const d = dp != null ? dp : (n < 10 ? 1 : 0);
+  return Number(n.toFixed(d)).toString();
+}
+
+/* Round a methadone dose to a practical increment (0.5 mg, liquid-compatible) */
+function roundMeth(n) {
+  return Math.max(0.5, Math.round(n * 2) / 2);
+}
+
+/* ---- Step 1: stack ---- */
+function addStackRow() {
+  stackRows.push({ opioid: "mor_po", dose: "", freq: 3 });
+  renderStack();
+}
+
+function removeStackRow(i) {
+  stackRows.splice(i, 1);
+  renderStack();
+}
+
+function rowMME(row) {
+  const o = OPIOIDS.find(x => x.id === row.opioid);
+  const dose = parseFloat(row.dose);
+  if (!o || isNaN(dose) || dose <= 0) return 0;
+  return o.kind === "patch" ? dose * o.factor : dose * row.freq * o.factor;
+}
+
+function totalOMEDD() {
+  return stackRows.reduce((s, r) => s + rowMME(r), 0);
+}
+
+function renderStack() {
+  const tb = $("stackTable").querySelector("tbody");
+  tb.innerHTML = "";
+  stackRows.forEach((row, i) => {
+    const o = OPIOIDS.find(x => x.id === row.opioid);
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><select data-i="' + i + '" data-k="opioid">' +
+        OPIOIDS.map(x => '<option value="' + x.id + '"' + (x.id === row.opioid ? " selected" : "") + ">" + x.label + "</option>").join("") +
+      "</select></td>" +
+      '<td><input type="number" min="0" step="any" data-i="' + i + '" data-k="dose" value="' + row.dose + '" placeholder="' + (o.kind === "patch" ? "mcg/h" : "mg per dose") + '"></td>' +
+      "<td>" + (o.kind === "patch"
+        ? '<span style="color:var(--muted)">continuous</span>'
+        : '<select data-i="' + i + '" data-k="freq">' +
+          FREQS.map(f => '<option value="' + f.v + '"' + (f.v == row.freq ? " selected" : "") + ">" + f.label + "</option>").join("") + "</select>") + "</td>" +
+      '<td style="color:var(--muted); font-size:.82rem">' + o.factorText + "</td>" +
+      '<td class="mono">' + fmt(rowMME(row)) + "</td>" +
+      '<td class="noprint"><button class="secondary small" data-del="' + i + '">✕</button></td>';
+    tb.appendChild(tr);
+  });
+
+  tb.querySelectorAll("select, input").forEach(el => {
+    el.addEventListener("change", onStackInput);
+    el.addEventListener("input", onStackInput);
+  });
+  tb.querySelectorAll("[data-del]").forEach(b =>
+    b.addEventListener("click", () => removeStackRow(+b.dataset.del)));
+
+  recalc();
+}
+
+function onStackInput(e) {
+  const i = +e.target.dataset.i, k = e.target.dataset.k;
+  stackRows[i][k] = k === "freq" ? +e.target.value : e.target.value;
+  if (k === "opioid") renderStack(); else recalc();
+}
+
+/* ---- Step 2: models ---- */
+function getModelResults() {
+  const m = totalOMEDD();
+  const cut = parseFloat($("safetyCut").value);
+  return MODELS.map(mod => {
+    const res = mod.calc(m);
+    if (res.tdd != null) res.tddAdj = res.tdd * (1 - cut);
+    return { mod, res };
+  });
+}
+
+function renderModels() {
+  const m = totalOMEDD();
+  const results = getModelResults();
+  const tb = $("modelTable").querySelector("tbody");
+  tb.innerHTML = "";
+  results.forEach(({ mod, res }) => {
+    const tr = document.createElement("tr");
+    const doseCell = res.tdd != null
+      ? '<span class="mono">' + fmt(res.tddAdj) + " mg/day</span>" +
+        (Math.abs(res.tddAdj - res.tdd) > 0.01 ? '<br><span style="color:var(--muted);font-size:.78rem">(' + fmt(res.tdd) + " mg before safety reduction)</span>" : "")
+      : '<span class="mono">' + fmt(res.prn.dose) + " mg " + res.prn.freq + "</span>";
+    tr.innerHTML =
+      '<td><input type="radio" name="model" value="' + mod.id + '"' + (mod.id === selectedModel ? " checked" : "") + "></td>" +
+      "<td><strong>" + mod.name + "</strong></td>" +
+      '<td style="font-size:.84rem">' + res.ratioLabel + "</td>" +
+      "<td>" + doseCell + "</td>" +
+      '<td style="font-size:.82rem; color:var(--muted)">' + res.note + "</td>";
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('input[name="model"]').forEach(r =>
+    r.addEventListener("change", () => { selectedModel = r.value; recalc(); }));
+
+  const sel = results.find(x => x.mod.id === selectedModel);
+  const box = $("modelSummary");
+  if (m <= 0) {
+    box.innerHTML = '<div class="banner warn"><strong>No opioid stack entered</strong> Add the patient\'s current opioids in Step 1.</div>';
+  } else if (sel.res.tdd != null) {
+    box.innerHTML = '<div class="banner ok"><strong>Selected: ' + sel.mod.name + "</strong>" +
+      "oMEDD " + fmt(m) + " mg/day → methadone <strong>" + fmt(sel.res.tddAdj) + " mg/day</strong> (" + sel.res.ratioLabel +
+      ", after safety reduction). Given q8h that is ≈ <strong>" + fmt(roundMeth(sel.res.tddAdj / 3)) + " mg per dose</strong>.</div>";
+  } else {
+    box.innerHTML = '<div class="banner ok"><strong>Selected: ' + sel.mod.name + "</strong>" + sel.res.note + "</div>";
+  }
+}
+
+/* ---- Step 3: QTc ---- */
+function qtcAssessment(plannedTDD) {
+  let pts = 0;
+  document.querySelectorAll(".rf:checked").forEach(c => pts += +c.dataset.w);
+  if (plannedTDD != null && plannedTDD > 100) pts += 2; // high methadone dose itself is a risk factor (Chou 2014)
+
+  const qtc = parseFloat($("qtc").value);
+  let level, cls, msgs = [];
+  if (!isNaN(qtc) && qtc > 500) {
+    level = "Contraindicated"; cls = "high";
+    msgs.push("Baseline QTc > 500 ms: methadone should generally be avoided or discontinued. Consider alternative opioids; if methadone is truly unavoidable, only under specialist supervision with cardiology input and ECG monitoring.");
+  } else if (!isNaN(qtc) && qtc > 450) {
+    pts += 2;
+    msgs.push("Baseline QTc 450–500 ms: proceed only with caution, ECG follow-up, and correction of all modifiable factors.");
+  }
+  if (!level) {
+    if (pts >= 5)      { level = "High risk"; cls = "high"; }
+    else if (pts >= 2) { level = "Moderate risk"; cls = "mod"; }
+    else               { level = "Low risk"; cls = "low"; }
+  }
+  if (plannedTDD != null && plannedTDD > 100)
+    msgs.push("Planned methadone dose > 100 mg/day is independently associated with torsades risk — Chou 2014 recommends ECG monitoring at this threshold.");
+  if (pts > 0 && cls !== "high")
+    msgs.push("Correct modifiable factors first: replete K⁺ > 4.0 mmol/L and Mg²⁺ > 0.85 mmol/L, review the QTc-prolonging medication list, and obtain a baseline ECG if not already done.");
+  msgs.push("ECG plan (Chou 2014): baseline ECG for all patients with known risk factors; repeat ~2–4 weeks after initiation and after significant dose escalation; act on QTc > 500 ms.");
+  return { level, cls, msgs, blocked: (!isNaN(qtc) && qtc > 500) };
+}
+
+function renderQtc() {
+  const sel = getModelResults().find(x => x.mod.id === selectedModel);
+  const planned = sel && sel.res.tddAdj != null ? sel.res.tddAdj : null;
+  const a = qtcAssessment(planned);
+  $("qtcResult").innerHTML =
+    '<div class="banner ' + (a.cls === "high" ? "danger" : a.cls === "mod" ? "warn" : "ok") + '">' +
+    "<strong>QTc risk: <span class='pill " + a.cls + "'>" + a.level + "</span></strong>" +
+    "<ul class='tight'>" + a.msgs.map(x => "<li>" + x + "</li>").join("") + "</ul></div>";
+  return a;
+}
+
+/* ---- Step 4: schedule ---- */
+function renderSchedule() {
+  const m = totalOMEDD();
+  const gate = $("scheduleGate");
+  const out = $("scheduleOut");
+  gate.innerHTML = ""; out.innerHTML = "";
+
+  if (m <= 0) { gate.innerHTML = '<div class="banner warn"><strong>Enter the opioid stack in Step 1 first.</strong></div>'; return; }
+
+  const a = renderQtc();
+  if (a.blocked && !specialistOverride) {
+    gate.innerHTML =
+      '<div class="banner danger"><strong>Schedule generation blocked: baseline QTc > 500 ms.</strong>' +
+      "Methadone initiation above this threshold carries a serious risk of torsades de pointes. " +
+      "This tool will not generate a regimen unless you confirm specialist supervision.</div>" +
+      '<label class="check noprint"><input type="checkbox" id="specOverride"><span>A palliative care / pain specialist is supervising this rotation and I accept responsibility for proceeding despite QTc > 500 ms.</span></label>';
+    $("specOverride").addEventListener("change", e => { specialistOverride = e.target.checked; recalc(); });
+    return;
+  }
+
+  const strategy = $("strategy").value;
+  const sel = getModelResults().find(x => x.mod.id === selectedModel);
+  const res = sel.res;
+
+  // Fixed-PRN models force their own protocol schedule; PRN strategy with a ratio model uses Morley–Makin maths.
+  if (res.prn) { renderFixedProtocol(selectedModel, res.prn, out); return; }
+  if (strategy === "prn") { renderFixedProtocol("morley", MODELS.find(x => x.id === "morley").calc(m).prn, out); return; }
+
+  const tdd = res.tddAdj;
+  const perDose = roundMeth(tdd / 3);      // full target divided q8h
+  const btdd = roundMeth(tdd * 0.1);       // breakthrough 10% TDD
+  const load = strategy === "rapid" && selectedModel === "ayonrinde" ? roundMeth(tdd * 0.375) : null; // Ayonrinde loading 25–50%, midpoint shown
+
+  let rows = "";
+  if (strategy === "gradual") {
+    // Edmonton-style thirds: day N gives N/3 of the target TDD, each day's amount divided q8h.
+    rows =
+      schedRow("Day 1", "≈ ⅔ of current regimen (" + fmt(m * 2 / 3) + " mg oMEDD)", fmt(roundMeth(tdd / 9)) + " mg q8h (⅓ of target = " + fmt(tdd / 3) + " mg/day)", btdd) +
+      schedRow("Day 2", "≈ ⅓ of current regimen (" + fmt(m / 3) + " mg oMEDD)", fmt(roundMeth(tdd * 2 / 9)) + " mg q8h (⅔ of target = " + fmt(tdd * 2 / 3) + " mg/day)", btdd) +
+      schedRow("Day 3", "Stop previous opioid", fmt(perDose) + " mg q8h (full target " + fmt(tdd) + " mg/day)", btdd) +
+      schedRow("Day 4–7", "—", "Hold at " + fmt(perDose) + " mg q8h. Do NOT up-titrate before 72 h — methadone keeps accumulating until steady state (day 5–7).", btdd) +
+      schedRow("After day 7", "—", "Reassess: titrate in small increments (≤ 5–10 mg/day) no more often than every 5–7 days, guided by pain and breakthrough use.", btdd);
+  } else { // rapid stop-and-go
+    rows =
+      schedRow("Day 1", "STOP previous opioid completely", fmt(perDose) + " mg q8h (" + fmt(tdd) + " mg/day)" + (load ? "<br>+ loading dose " + fmt(load) + " mg once (Ayonrinde: 25–50% of TDD on days 1–2)" : ""), btdd) +
+      schedRow("Day 2", "—", fmt(perDose) + " mg q8h" + (load ? "<br>+ optional second loading dose " + fmt(load) + " mg" : ""), btdd) +
+      schedRow("Day 3–7", "—", "Hold. Do NOT up-titrate before 72 h; steady state only at day 5–7.", btdd) +
+      schedRow("After day 7", "—", "Reassess and titrate in small increments (≤ 5–10 mg/day) every 5–7 days as needed.", btdd);
+  }
+
+  out.innerHTML =
+    '<div class="banner warn"><strong>Verify before prescribing.</strong> ' +
+    "Model: " + sel.mod.name + " (" + res.ratioLabel + "). Safety reduction applied: " + ($("safetyCut").value * 100) + "%. " +
+    "Breakthrough = 10% of methadone TDD. All doses assume oral administration, normal organ function, and q8h scheduling — individualise.</div>" +
+    "<table><thead><tr><th style='width:12%'>Day</th><th style='width:26%'>Previous opioid</th><th style='width:34%'>Methadone (scheduled)</th><th style='width:14%'>Breakthrough</th><th>Monitoring</th></tr></thead><tbody>" +
+    rows + "</tbody></table>" +
+    '<ul class="tight" style="margin-top:.6rem">' +
+    "<li><strong>Monitoring, all days:</strong> sedation score and respiratory rate at least q4h while awake; methadone's analgesic half-life (6–8 h) is far shorter than its elimination half-life — accumulation sneaks up on days 2–5.</li>" +
+    "<li><strong>Never chase day-1 pain with scheduled methadone increases</strong> — use breakthrough doses and reassess at 72 h.</li>" +
+    "<li>Hold dose and reassess if: RR &lt; 8/min, difficult to rouse, or new confusion/hallucinations.</li>" +
+    "<li>Transdermal fentanyl note: after patch removal, a subcutaneous reservoir continues releasing drug for 12–24 h — overlap is expected; do not mistake it for methadone excess.</li>" +
+    "<li>Recheck ECG 2–4 weeks after initiation and after any major dose increase (more often if QTc risk factors present).</li>" +
+    "</ul>";
+
+  function schedRow(day, prev, meth, bt) {
+    return "<tr><td><strong>" + day + "</strong></td><td>" + prev + "</td><td class='mono'>" + meth + "</td><td class='mono'>" +
+      fmt(bt) + " mg q2–3h PRN</td><td style='font-size:.8rem;color:var(--muted)'>Sedation + RR q4h; pain score; breakthrough count</td></tr>";
+  }
+}
+
+function renderFixedProtocol(modelId, prn, out) {
+  const perDose = roundMeth(prn.dose);
+  const head = "<table><thead><tr><th style='width:12%'>Day</th><th style='width:24%'>Previous opioid</th><th style='width:36%'>Methadone</th><th style='width:12%'>Breakthrough</th><th>Monitoring</th></tr></thead><tbody>";
+  const tail = "</tbody></table>";
+
+  if (modelId === "edmonton") {
+    // Classic Bruera/Edmonton 3-day stop-and-go: fixed PRN day 1, then days 2–3 built from actual use.
+    out.innerHTML =
+      '<div class="banner warn"><strong>Edmonton 3-day protocol (Bruera).</strong> Fixed PRN methadone on day 1 with a ⅓ reduction of the previous opioid; the day-1 total taken sets the scheduled dose for days 2–3. Requires meticulous PRN documentation.</div>' +
+      head +
+      "<tr><td><strong>Day 1</strong></td><td>Reduce by ⅓ (≈ ⅔ of current regimen)</td><td class='mono'>" + fmt(perDose) + " mg q4h PRN — no scheduled doses (max " + fmt(prn.maxDay) + " mg/24 h)</td><td class='mono'>—</td><td style='font-size:.8rem;color:var(--muted)'>Record EVERY dose taken; sedation + RR q4h</td></tr>" +
+      "<tr><td><strong>Day 2</strong></td><td>Reduce by another ⅓ (≈ ⅓ of current regimen)</td><td class='mono'>Total methadone actually taken on day 1, divided q8h (e.g. 30 mg taken → 10 mg q8h)</td><td class='mono'>≈ 10% of day-1 total q2–3h PRN</td><td style='font-size:.8rem;color:var(--muted)'>Continue dose diary</td></tr>" +
+      "<tr><td><strong>Day 3</strong></td><td>Stop previous opioid</td><td class='mono'>Continue day-2 schedule; adjust only if clearly under- or over-dosed</td><td class='mono'>≈ 10% of TDD q2–3h PRN</td><td style='font-size:.8rem;color:var(--muted)'>Sedation + RR q4h</td></tr>" +
+      "<tr><td><strong>Day 4–7</strong></td><td>—</td><td class='mono'>Hold steady. No up-titration before 72 h; steady state at day 5–7</td><td class='mono'>≈ 10% of TDD q2–3h PRN</td><td style='font-size:.8rem;color:var(--muted)'>Then reassess for titration</td></tr>" +
+      tail +
+      '<ul class="tight" style="margin-top:.6rem">' +
+      "<li>The fixed day-1 PRN dose here is tiered by oMEDD: 5 mg q4h PRN below 300 mg/day, 10 mg q4h PRN at or above 300 mg/day (max 5 doses/24 h). Some centres use lower starts in frail or elderly patients — individualise.</li>" +
+      "<li>This protocol is deliberately demand-led: it trades precision for safety at high oMEDD where ratio models disagree.</li>" +
+      "<li>ECG per Step-3 checklist; recheck 2–4 weeks after stabilisation.</li></ul>";
+    return;
+  }
+
+  // Morley–Makin
+  let rows = "";
+  for (let d = 1; d <= 5; d++) {
+    rows += "<tr><td><strong>Day " + d + "</strong></td><td>" + (d === 1 ? "STOP previous opioid completely" : "—") +
+      "</td><td class='mono'>" + fmt(perDose) + " mg " + prn.freq + " (no scheduled doses; max theoretical " + fmt(perDose * 8) + " mg/day)</td>" +
+      "<td class='mono'>—</td><td style='font-size:.8rem;color:var(--muted)'>Record EVERY administered dose — days 4–5 totals set the maintenance dose</td></tr>";
+  }
+  rows += "<tr><td><strong>Day 6</strong></td><td>—</td><td class='mono'>Maintenance = mean of actual day-4 and day-5 totals, divided BID (q12h)</td><td class='mono'>10% of new TDD q2–3h PRN</td><td style='font-size:.8rem;color:var(--muted)'>Then hold ≥ 72 h before any titration</td></tr>";
+
+  out.innerHTML =
+    '<div class="banner warn"><strong>Morley–Makin fixed-PRN titration.</strong> Best suited to inpatient use — it depends on meticulous PRN documentation for 5 days. The dose offered each time is 10% of the daily oMEDD, capped at 30 mg.</div>' +
+    head + rows + tail +
+    '<ul class="tight" style="margin-top:.6rem">' +
+    "<li>This method self-titrates to the patient's real requirement, which is why it copes with very high oMEDD where ratio models diverge wildly.</li>" +
+    "<li>If few PRN doses are taken on days 1–2, reassess whether the previous opioid was truly stopped and whether pain is being captured.</li>" +
+    "<li>Same safety rules: sedation + RR q4h; no up-titration inside 72 h; ECG per checklist.</li></ul>";
+}
+
+/* ---- master recalc ---- */
+function recalc() {
+  const m = totalOMEDD();
+  $("omeddTotal").textContent = fmt(m);
+  $("omeddHigh").classList.toggle("hidden", m <= 300);
+  renderModels();
+  renderSchedule();
+}
+
+/* ---- wiring ---- */
+$("ack").addEventListener("change", e => { $("unlock").disabled = !e.target.checked; });
+$("unlock").addEventListener("click", () => {
+  $("app").classList.remove("hidden");
+  $("gate").querySelector(".banner").style.opacity = ".6";
+});
+$("addRow").addEventListener("click", addStackRow);
+$("safetyCut").addEventListener("change", recalc);
+$("strategy").addEventListener("change", recalc);
+$("qtc").addEventListener("input", recalc);
+document.querySelectorAll(".rf").forEach(c => c.addEventListener("change", recalc));
+
+addStackRow();
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Dependencies / builds
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Archived per-tool git history from before the monorepo (AMORM, TTB_DP)
+.git.orig/
+
+# Local test scaffolding
+.smoke/

@@ -1,0 +1,16 @@
+/* App specific styles if needed, otherwise rely on index.css */
+.result-big {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.refs ul {
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+}
+.refs li {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--ink-secondary);
+}

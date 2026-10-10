@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LCD-Mapped Non-Cancer Prognostic Synthesizer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #181a1b;
+    --panel: #202326;
+    --panel-2: #282c30;
+    --border: #383d42;
+    --border-hover: #50565d;
+    --text: #e1e3e6;
+    --muted: #9da3a8;
+    --accent: #458b99;
+    --accent-hover: #4e9cae;
+    --accent-2: #3a7b8c;
+    --good: #4a9e69;
+    --good-bg: rgba(74, 158, 105, 0.15);
+    --warn: #c2903c;
+    --warn-bg: rgba(194, 144, 60, 0.15);
+    --bad: #c25252;
+    --bad-bg: rgba(194, 82, 82, 0.15);
+    --radius: 6px;
+    --radius-sm: 4px;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 0.85rem; }
+
+  main { 
+    max-width: 900px; 
+    margin: 32px auto; 
+    padding: 0 24px 80px; 
+  }
+
+  .steps-bar { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+  .steps-bar .dot {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  .steps-bar .dot.active { 
+    border-color: var(--accent); 
+    background: rgba(69, 139, 153, 0.1);
+    color: var(--text); 
+  }
+  .steps-bar .dot.done { 
+    border-color: var(--good); 
+    color: var(--good); 
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .card h2 { margin-top: 0; font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+  .hint { color: var(--muted); font-size: 0.85rem; margin-top: 0; margin-bottom: 18px; line-height: 1.5; }
+
+  fieldset { border: none; margin: 0 0 20px; padding: 0; }
+  legend, .q-label { 
+    font-weight: 500; 
+    font-size: 0.95rem; 
+    margin-bottom: 10px; 
+    display: block; 
+    color: var(--text);
+  }
+
+  .opt {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px 14px; margin-bottom: 8px;
+    background: var(--panel-2); 
+    border: 1px solid var(--border);
+    border-radius: var(--radius); 
+    cursor: pointer; 
+    font-size: 0.9rem;
+    transition: all 0.15s ease;
+  }
+  .opt:hover { border-color: var(--border-hover); background: #2b3035; }
+  .opt:has(input:checked) {
+    border-color: var(--accent);
+    background: rgba(69, 139, 153, 0.05);
+  }
+
+  .opt input { 
+    margin-top: 4px; 
+    accent-color: var(--accent); 
+    width: 16px; 
+    height: 16px; 
+    cursor: pointer;
+  }
+  .opt .sub { color: var(--muted); font-size: 0.8rem; display: block; margin-top: 4px; }
+
+  .row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .row > div { flex: 1; min-width: 200px; }
+  
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%; 
+    padding: 10px 12px;
+    background: var(--panel-2); 
+    color: var(--text);
+    border: 1px solid var(--border); 
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem; 
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+  input::placeholder, textarea::placeholder { color: #666c72; }
+  input:hover, select:hover, textarea:hover { border-color: var(--border-hover); }
+  input:focus, select:focus, textarea:focus { 
+    outline: none; 
+    border-color: var(--accent); 
+    box-shadow: 0 0 0 2px rgba(69, 139, 153, 0.2); 
+  }
+  textarea { min-height: 280px; resize: vertical; line-height: 1.6; }
+
+  .nav { display: flex; gap: 12px; justify-content: space-between; margin-top: 12px; }
+  button {
+    padding: 10px 24px; 
+    border-radius: var(--radius-sm); 
+    border: 1px solid var(--border);
+    background: var(--panel-2); 
+    color: var(--text);
+    font-size: 0.95rem; 
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  button.primary { 
+    background: var(--accent); 
+    border-color: var(--accent); 
+    color: #fff; 
+  }
+  button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  button:hover:not(.primary) { border-color: var(--border-hover); background: #2b3035; }
+  button:active { transform: translateY(1px); }
+
+  .verdict { 
+    padding: 18px 20px; 
+    border-radius: var(--radius-sm); 
+    margin-bottom: 20px; 
+    font-size: 0.95rem; 
+  }
+  .verdict.meets { background: var(--good-bg); border: 1px solid var(--good); }
+  .verdict.partial { background: var(--warn-bg); border: 1px solid var(--warn); }
+  .verdict.no { background: var(--bad-bg); border: 1px solid var(--bad); }
+  .verdict strong { display: block; margin-bottom: 6px; font-weight: 600; font-size: 1rem; color: var(--text); }
+
+  ul.checks { list-style: none; padding: 0; margin: 0; background: var(--panel-2); border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  ul.checks li { padding: 12px 16px; font-size: 0.9rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; }
+  ul.checks li:last-child { border-bottom: none; }
+  
+  .tag { 
+    display: inline-flex; 
+    align-items: center;
+    justify-content: center;
+    min-width: 60px; 
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    margin-right: 12px; 
+    padding: 4px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .tag.met { background: var(--good-bg); color: var(--good); }
+  .tag.unmet { background: var(--bad-bg); color: var(--bad); }
+  .tag.na { background: rgba(157, 163, 168, 0.1); color: var(--muted); }
+
+  .disclaimer {
+    font-size: 0.8rem; 
+    color: var(--muted);
+    border: 1px dashed var(--border); 
+    border-radius: var(--radius);
+    padding: 16px; 
+    margin-top: 24px;
+    line-height: 1.5;
+  }
+  details { margin-bottom: 20px; }
+  summary { cursor: pointer; font-weight: 500; font-size: 0.95rem; color: var(--accent); margin-bottom: 12px; transition: color 0.15s ease; }
+  summary:hover { color: var(--accent-hover); }
+  .bode-result { margin-top: 12px; padding: 14px 16px; background: var(--panel-2); border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 0.95rem; font-weight: 500; }
+  
+  /* Audit Risk Alert */
+  .audit-risk {
+    background: rgba(194, 82, 82, 0.1);
+    border-left: 4px solid var(--bad);
+    padding: 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .audit-risk h3 { margin: 0 0 8px 0; color: #ff8b8b; font-size: 1rem; }
+  .audit-risk ul { margin: 0; padding-left: 20px; color: var(--text); font-size: 0.9rem; }
+  .audit-risk li { margin-bottom: 4px; }
+
+  /* Trajectory Chart */
+  .trajectory-chart {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .trajectory-chart h3 { margin: 0 0 16px 0; font-size: 0.95rem; font-weight: 600; }
+  .bar-row { display: flex; align-items: center; margin-bottom: 12px; }
+  .bar-label { width: 100px; font-size: 0.85rem; color: var(--muted); }
+  .bar-track { flex: 1; background: #181a1b; height: 24px; border-radius: 12px; overflow: hidden; }
+  .bar-fill { height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; font-size: 0.75rem; font-weight: 700; color: #fff; transition: width 0.5s ease; }
+  .bar-fill.baseline { background: #50565d; }
+  .bar-fill.current { background: var(--accent); }
+
+  /* Smooth transitions between steps */
+  #app { animation: fadeIn 0.3s ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>LCD-Mapped Non-Cancer Prognostic Synthesizer</h1>
+  <p>Hospice eligibility wizard keyed to Medicare LCD L34538 (Hospice Determining Terminal Status) — CHF, COPD, Dementia</p>
+</header>
+<main>
+  <div class="steps-bar" id="stepsBar"></div>
+  <div id="app"></div>
+</main>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ */
+/* State                                                               */
+/* ------------------------------------------------------------------ */
+const state = {
+  step: 0,
+  data: {
+    initials: "", age: "", sex: "", dx: "",
+    baselinePps: "", pps: "", baselineWeight: "", weightLoss: "", albumin: "", edVisits: "",
+    // CHF
+    nyha: "", chfRest: "", chfOptimal: "", chfGdmt: "", chfSurgical: "", ef: "", chfSupportive: [],
+    // COPD
+    copdDyspnea: "", copdFunction: "", copdGdmt: "", fev1: "", copdSupportive: [],
+    bode: { bmi: "", fev1: "", mmrc: "", walk: "" },
+    // Dementia
+    fast: "", fastDetails: [], demComorbid: [],
+    // Comorbidities
+    secComorbidities: []
+  }
+};
+
+const DX_LABEL = { chf: "Congestive Heart Failure", copd: "End-Stage COPD", dementia: "Dementia / Alzheimer's Disease" };
+
+/* ------------------------------------------------------------------ */
+/* Reference content (LCD L34538 language)                             */
+/* ------------------------------------------------------------------ */
+const PPS_OPTIONS = [
+  [90, "90% — Ambulatory, normal activity"],
+  [80, "80% — Normal activity with effort"],
+  [70, "70% — Reduced activity, unable to do normal job/work"],
+  [60, "60% — Reduced ambulation, occasional assistance necessary"],
+  [50, "50% — Mainly sit/lie, considerable assistance required"],
+  [40, "40% — Mainly in bed, unable to do most activity"],
+  [30, "30% — Totally bed bound, extensive care required"],
+  [20, "20% — Totally bed bound, minimal intake"],
+  [10, "10% — Totally bed bound, no intake, drowsy/coma"]
+];
+
+const FAST_OPTIONS = [
+  ["5", "5 — Requires assistance choosing proper clothing"],
+  ["6a", "6a — Difficulty putting on clothing properly"],
+  ["6b", "6b — Unable to bathe properly"],
+  ["6c", "6c — Inability to handle mechanics of toileting"],
+  ["6d", "6d — Urinary incontinence"],
+  ["6e", "6e — Fecal incontinence"],
+  ["7a", "7a — Speech limited to ~6 intelligible words/day"],
+  ["7b", "7b — Speech limited to a single intelligible word"],
+  ["7c", "7c — Unable to ambulate without assistance [LCD THRESHOLD]"],
+  ["7d", "7d — Unable to sit up without assistance"],
+  ["7e", "7e — Loss of ability to smile"],
+  ["7f", "7f — Unable to hold head up independently"]
+];
+const FAST_RANK = { "1":1,"2":2,"3":3,"4":4,"5":5,"6a":6.1,"6b":6.2,"6c":6.3,"6d":6.4,"6e":6.5,"7a":7.1,"7b":7.2,"7c":7.3,"7d":7.4,"7e":7.5,"7f":7.6 };
+
+const FAST_DETAILS = [
+  "unable to ambulate without assistance",
+  "unable to dress without assistance",
+  "unable to bathe without assistance",
+  "urinary and fecal incontinence",
+  "no meaningful verbal communication (stereotypical phrases only or ≤6 intelligible words per day)"
+];
+
+const DEM_COMORBID = [
+  "Aspiration pneumonia",
+  "Pyelonephritis or other upper urinary tract infection",
+  "Septicemia",
+  "Multiple decubitus ulcers, stage 3–4",
+  "Fever, recurrent after antibiotics",
+  "Inability to maintain sufficient fluid/calorie intake"
+];
+
+const CHF_SUPPORTIVE = [
+  "Treatment-resistant symptomatic supraventricular or ventricular arrhythmias",
+  "History of cardiac arrest or resuscitation",
+  "History of unexplained syncope",
+  "Brain embolism of cardiac origin",
+  "Concomitant HIV disease"
+];
+
+const COPD_SUPPORTIVE = [
+  "Hypoxemia at rest on room air (pO2 ≤ 55 mmHg or SpO2 ≤ 88%)",
+  "Hypercapnia (pCO2 ≥ 50 mmHg)",
+  "Cor pulmonale / right heart failure secondary to pulmonary disease",
+  "Unintentional progressive weight loss > 10% over preceding 6 months",
+  "Resting tachycardia > 100/min",
+  "Increased ED visits or hospitalizations for pulmonary infections"
+];
+
+const SECONDARY_COMORBIDITIES = [
+  "Type 2 Diabetes with severe complications",
+  "Chronic Kidney Disease (Stage 3 or higher)",
+  "Secondary Heart Failure / Cardiovascular disease",
+  "Secondary Pulmonary Disease / COPD",
+  "Severe Malnutrition / Cachexia",
+  "Recurrent severe infections",
+  "Cerebrovascular disease / history of stroke",
+  "Peripheral vascular disease"
+];
+
+const GDMT_OPTIONS = [
+  ["exhausted", "Optimized but exhausted/refractory (no further benefit)"],
+  ["contraindicated", "Medically contraindicated (e.g. hypotension, renal failure)"],
+  ["refused", "Actively refused by patient/family / Electing palliative focus"]
+];
+
+/* ------------------------------------------------------------------ */
+/* Rendering                                                           */
+/* ------------------------------------------------------------------ */
+const app = document.getElementById("app");
+const stepsBar = document.getElementById("stepsBar");
+const STEP_NAMES = ["Patient & Dx", "General Decline", "Disease-Specific", "Comorbidities", "Synthesis"];
+
+function renderStepsBar() {
+  stepsBar.innerHTML = STEP_NAMES.map((n, i) => {
+    const cls = i === state.step ? "active" : (i < state.step ? "done" : "");
+    return `<span class="dot ${cls}">${i + 1}. ${n}</span>`;
+  }).join("");
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function radioGroup(name, options, current) {
+  return options.map(([val, label]) => `
+    <label class="opt">
+      <input type="radio" name="${name}" value="${esc(val)}" ${current === val ? "checked" : ""}>
+      <span>${label}</span>
+    </label>`).join("");
+}
+
+function checkGroup(name, options, current) {
+  return options.map(label => `
+    <label class="opt">
+      <input type="checkbox" name="${name}" value="${esc(label)}" ${current.includes(label) ? "checked" : ""}>
+      <span>${label}</span>
+    </label>`).join("");
+}
+
+function navButtons(back, nextLabel) {
+  return `<div class="nav">
+    <div>${back ? `<button id="btnBack">← Back</button>` : ""}</div>
+    <button class="primary" id="btnNext">${nextLabel || "Next →"}</button>
+  </div>`;
+}
+
+/* ---------------- Step 0 ---------------- */
+function renderStep0() {
+  const d = state.data;
+  app.innerHTML = `
+  <div class="card">
+    <h2>Patient & Primary Hospice Diagnosis</h2>
+    <p class="hint">Use initials only — everything runs locally in your browser.</p>
+    <div class="row">
+      <div><span class="q-label">Initials</span><input type="text" id="f_initials" value="${esc(d.initials)}" maxlength="4"></div>
+      <div><span class="q-label">Age</span><input type="number" id="f_age" min="18" max="120" value="${esc(d.age)}"></div>
+      <div><span class="q-label">Sex</span>
+        <select id="f_sex">
+          <option value="">—</option>
+          <option value="male" ${d.sex==="male"?"selected":""}>Male</option>
+          <option value="female" ${d.sex==="female"?"selected":""}>Female</option>
+        </select>
+      </div>
+    </div>
+    <fieldset style="margin-top:14px">
+      <legend>Primary terminal diagnosis</legend>
+      ${radioGroup("f_dx", [
+        ["dementia", "Dementia / Alzheimer's Disease <span class='sub'>FAST scale ≥ 7c + comorbidities</span>"],
+        ["chf", "Congestive Heart Failure <span class='sub'>NYHA Class IV, EF ≤ 20%</span>"],
+        ["copd", "End-Stage COPD / Pulmonary Disease <span class='sub'>dyspnea at rest, FEV1 &lt; 30%, hypoxemia</span>"]
+      ], d.dx)}
+    </fieldset>
+  </div>
+  ${navButtons(false)}`;
+
+  document.getElementById("btnNext").onclick = () => {
+    d.initials = document.getElementById("f_initials").value.trim();
+    d.age = document.getElementById("f_age").value;
+    d.sex = document.getElementById("f_sex").value;
+    const dx = document.querySelector('input[name="f_dx"]:checked');
+    if (!d.age) { alert("Please enter the patient's age."); return; }
+    if (!dx) { alert("Please select a primary diagnosis."); return; }
+    d.dx = dx.value;
+    go(1);
+  };
+}
+
+/* ---------------- Step 1 ---------------- */
+function renderStep1() {
+  const d = state.data;
+  app.innerHTML = `
+  <div class="card">
+    <h2>General Decline Indicators</h2>
+    <p class="hint">Documenting a longitudinal "story of decline" is critical to prevent audit denials.</p>
+    
+    <div class="row">
+      <fieldset style="flex:1">
+        <legend>Baseline PPS (e.g. 6 mos ago)</legend>
+        <select id="f_baselinePps">
+          <option value="">Select Baseline PPS…</option>
+          ${PPS_OPTIONS.map(([v, l]) => `<option value="${v}" ${String(d.baselinePps)===String(v)?"selected":""}>${l}</option>`).join("")}
+        </select>
+      </fieldset>
+      <fieldset style="flex:1">
+        <legend>Current PPS</legend>
+        <select id="f_pps">
+          <option value="">Select Current PPS…</option>
+          ${PPS_OPTIONS.map(([v, l]) => `<option value="${v}" ${String(d.pps)===String(v)?"selected":""}>${l}</option>`).join("")}
+        </select>
+      </fieldset>
+    </div>
+
+    <div class="row">
+      <div>
+        <span class="q-label">Current Weight (lbs/kg)</span>
+        <input type="number" id="f_baselineWeight" min="0" step="0.1" value="${esc(d.baselineWeight)}" placeholder="Optional raw weight">
+      </div>
+      <div>
+        <span class="q-label">Unintentional weight loss in 6mo (%)</span>
+        <input type="number" id="f_weight" min="0" max="60" step="0.1" value="${esc(d.weightLoss)}" placeholder="e.g. 12">
+      </div>
+    </div>
+    
+    <div class="row">
+      <div>
+        <span class="q-label">Serum albumin (g/dL)</span>
+        <input type="number" id="f_albumin" min="0.5" max="6" step="0.1" value="${esc(d.albumin)}" placeholder="e.g. 2.3">
+      </div>
+      <div>
+        <span class="q-label">ED visits/hosp. in past 6mo</span>
+        <input type="number" id="f_ed" min="0" max="30" value="${esc(d.edVisits)}" placeholder="0">
+      </div>
+    </div>
+  </div>
+  ${navButtons(true)}`;
+
+  document.getElementById("btnBack").onclick = () => go(0);
+  document.getElementById("btnNext").onclick = () => {
+    d.baselinePps = document.getElementById("f_baselinePps").value;
+    d.pps = document.getElementById("f_pps").value;
+    d.baselineWeight = document.getElementById("f_baselineWeight").value;
+    d.weightLoss = document.getElementById("f_weight").value;
+    d.albumin = document.getElementById("f_albumin").value;
+    d.edVisits = document.getElementById("f_ed").value;
+    go(2);
+  };
+}
+
+/* ---------------- Step 2: disease-specific ---------------- */
+function renderStep2() {
+  const d = state.data;
+  let body = "";
+
+  if (d.dx === "chf") {
+    body = `
+    <div class="card">
+      <h2>Heart Disease — LCD Criteria</h2>
+      <fieldset>
+        <legend>NYHA Functional Classification</legend>
+        ${radioGroup("f_nyha", [
+          ["I", "Class I — no limitation"],
+          ["II", "Class II — slight limitation"],
+          ["III", "Class III — marked limitation"],
+          ["IV", "Class IV — symptoms present at rest [LCD THRESHOLD]"]
+        ], d.nyha)}
+      </fieldset>
+      <fieldset>
+        <legend>GDMT Exhaustion (Guideline-Directed Medical Therapy)</legend>
+        <p class="hint">Medicare requires documentation that the illness is terminal despite optimal management.</p>
+        ${radioGroup("f_chfGdmt", GDMT_OPTIONS, d.chfGdmt)}
+      </fieldset>
+      <fieldset>
+        <legend>Symptoms at rest despite optimal treatment</legend>
+        ${checkGroup("f_chfRest", ["Dyspnea at rest", "Angina at rest"], d.chfRest)}
+      </fieldset>
+      <fieldset>
+        <legend>Surgical candidacy</legend>
+        ${radioGroup("f_chfSurgical", [
+          ["not_candidate", "Not a candidate for surgical intervention / patient declines"],
+          ["candidate", "Candidate for / pursuing surgical intervention"]
+        ], d.chfSurgical)}
+      </fieldset>
+      <fieldset>
+        <legend>LVEF (%) — supportive if ≤ 20%</legend>
+        <input type="number" id="f_ef" min="5" max="75" value="${esc(d.ef)}" placeholder="e.g. 18">
+      </fieldset>
+      <fieldset>
+        <legend>Supportive factors</legend>
+        ${checkGroup("f_chfSupportive", CHF_SUPPORTIVE, d.chfSupportive)}
+      </fieldset>
+    </div>`;
+  } else if (d.dx === "copd") {
+    body = `
+    <div class="card">
+      <h2>Pulmonary Disease — LCD Criteria</h2>
+      <fieldset>
+        <legend>Disabling dyspnea at rest?</legend>
+        ${radioGroup("f_copdDyspnea", [["yes","Yes"],["no","No"]], d.copdDyspnea)}
+      </fieldset>
+      <fieldset>
+        <legend>GDMT Exhaustion / Refractory to bronchodilators</legend>
+        <p class="hint">Medicare requires proof that the disease is terminal despite optimal therapy.</p>
+        ${radioGroup("f_copdGdmt", GDMT_OPTIONS, d.copdGdmt)}
+      </fieldset>
+      <fieldset>
+        <legend>Decreased functional capacity</legend>
+        ${checkGroup("f_copdFunction", ["Bed-to-chair existence", "Fatigue", "Chronic cough"], d.copdFunction)}
+      </fieldset>
+      <fieldset>
+        <legend>FEV1 after bronchodilator (% predicted) — supportive if &lt; 30%</legend>
+        <input type="number" id="f_fev1" min="5" max="120" value="${esc(d.fev1)}" placeholder="e.g. 26">
+      </fieldset>
+      <fieldset>
+        <legend>Supportive factors</legend>
+        ${checkGroup("f_copdSupportive", COPD_SUPPORTIVE, d.copdSupportive)}
+      </fieldset>
+    </div>`;
+  } else {
+    body = `
+    <div class="card">
+      <h2>Dementia — LCD Criteria</h2>
+      <fieldset>
+        <legend>FAST Staging — highest applicable stage</legend>
+        ${radioGroup("f_fast", FAST_OPTIONS, d.fast)}
+      </fieldset>
+      <fieldset>
+        <legend>Stage 7c clinical descriptors present</legend>
+        <p class="hint">Warning: MACs heavily audit FAST 7c. Ensure incontinence and mobility descriptors are explicitly checked if they exist.</p>
+        ${checkGroup("f_fastDetails", FAST_DETAILS, d.fastDetails)}
+      </fieldset>
+      <fieldset>
+        <legend>Comorbid conditions in past 12 months (≥1 required)</legend>
+        ${checkGroup("f_demComorbid", DEM_COMORBID, d.demComorbid)}
+      </fieldset>
+    </div>`;
+  }
+
+  app.innerHTML = body + navButtons(true);
+
+  document.getElementById("btnBack").onclick = () => go(1);
+  document.getElementById("btnNext").onclick = () => {
+    collectStep2();
+    go(3);
+  };
+}
+
+function collectChecks(name) {
+  return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value);
+}
+function getRadio(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : "";
+}
+
+function collectStep2() {
+  const d = state.data;
+  if (d.dx === "chf") {
+    d.nyha = getRadio("f_nyha");
+    d.chfRest = collectChecks("f_chfRest");
+    d.chfGdmt = getRadio("f_chfGdmt");
+    d.chfSurgical = getRadio("f_chfSurgical");
+    d.ef = document.getElementById("f_ef").value;
+    d.chfSupportive = collectChecks("f_chfSupportive");
+  } else if (d.dx === "copd") {
+    d.copdDyspnea = getRadio("f_copdDyspnea");
+    d.copdFunction = collectChecks("f_copdFunction");
+    d.copdGdmt = getRadio("f_copdGdmt");
+    d.fev1 = document.getElementById("f_fev1").value;
+    d.copdSupportive = collectChecks("f_copdSupportive");
+  } else {
+    d.fast = getRadio("f_fast");
+    d.fastDetails = collectChecks("f_fastDetails");
+    d.demComorbid = collectChecks("f_demComorbid");
+  }
+}
+
+/* ---------------- Step 3: Comorbidities ---------------- */
+function renderStep3() {
+  const d = state.data;
+  app.innerHTML = `
+  <div class="card">
+    <h2>Synergistic Comorbidities</h2>
+    <p class="hint">Patients often fail to meet strict primary LCD criteria for one disease but qualify through combined morbidities. Select secondary conditions driving general decline.</p>
+    <fieldset>
+      <legend>Secondary conditions (check all that apply)</legend>
+      ${checkGroup("f_secComorbidities", SECONDARY_COMORBIDITIES, d.secComorbidities)}
+    </fieldset>
+  </div>
+  ${navButtons(true, "Synthesize →")}`;
+
+  document.getElementById("btnBack").onclick = () => go(2);
+  document.getElementById("btnNext").onclick = () => {
+    d.secComorbidities = collectChecks("f_secComorbidities");
+    go(4);
+  };
+}
+
+/* ---------------- Assessment & Synthesis ---------------- */
+function assess() {
+  const d = state.data;
+  const checks = []; 
+  const risks = [];
+  let primaryMet = 0, primaryTotal = 0;
+
+  const push = (label, met, na) => checks.push({ label, met, na: !!na });
+
+  // General decline
+  const pps = parseInt(d.pps, 10);
+  if (!isNaN(pps)) push(`PPS ${pps}% (LCD indicator: ≤ 50%)`, pps <= 50);
+  const wl = parseFloat(d.weightLoss);
+  if (!isNaN(wl)) push(`Weight loss ${wl}% in 6mo (indicator: > 10%)`, wl > 10);
+  const alb = parseFloat(d.albumin);
+  if (!isNaN(alb)) push(`Albumin ${alb} g/dL (indicator: < 2.5)`, alb < 2.5);
+
+  // Disease
+  if (d.dx === "dementia") {
+    primaryTotal = 2;
+    const rank = FAST_RANK[d.fast] || 0;
+    const fastOk = rank >= FAST_RANK["7c"];
+    primaryMet += fastOk ? 1 : 0;
+    push(`FAST stage ${d.fast} (required: 7c+)`, fastOk);
+    const comOk = d.demComorbid.length >= 1;
+    primaryMet += comOk ? 1 : 0;
+    push(`${d.demComorbid.length} dementia comorbidities`, comOk);
+
+    // Audit Risks
+    if (fastOk) {
+      const hasIncont = d.fastDetails.some(c => c.includes("incontinence"));
+      const hasAmbul = d.fastDetails.some(c => c.includes("ambulate"));
+      if (!hasIncont || !hasAmbul) {
+        risks.push("Dementia FAST 7c+ claimed, but required descriptors (incontinence and/or inability to ambulate) are not documented as present. High denial risk.");
+      }
+    }
+  } else if (d.dx === "chf") {
+    primaryTotal = 2;
+    const nyhaOk = d.nyha === "IV";
+    primaryMet += nyhaOk ? 1 : 0;
+    push("NYHA Class IV symptoms at rest", nyhaOk);
+    const gdmtOk = !!d.chfGdmt;
+    primaryMet += gdmtOk ? 1 : 0;
+    push("GDMT exhausted/refused/contraindicated", gdmtOk);
+    
+    if (nyhaOk && !gdmtOk) {
+      risks.push("NYHA IV selected, but GDMT exhaustion is not documented. Medicare requires proof that disease is terminal despite optimal management.");
+    }
+  } else if (d.dx === "copd") {
+    primaryTotal = 2;
+    const dyspOk = d.copdDyspnea === "yes";
+    primaryMet += dyspOk ? 1 : 0;
+    push("Disabling dyspnea at rest", dyspOk);
+    const gdmtOk = !!d.copdGdmt;
+    primaryMet += gdmtOk ? 1 : 0;
+    push("GDMT/Bronchodilator exhausted or refused", gdmtOk);
+
+    if (dyspOk && !gdmtOk) {
+      risks.push("Dyspnea at rest selected, but GDMT/Bronchodilator exhaustion is not documented. Required by MACs.");
+    }
+  }
+
+  // Synergistic Comorbidities
+  if (d.secComorbidities.length > 0) {
+    push(`${d.secComorbidities.length} synergistic comorbidities driving decline`, true);
+  }
+
+  let status = primaryMet >= primaryTotal ? "meets" : (primaryMet > 0 ? "partial" : "no");
+  
+  // Synergistic Bump
+  if (status === "partial" && d.secComorbidities.length >= 2) {
+    status = "meets";
+    risks.push("Primary LCD criteria partially met, but bumped to 'Meets' due to multiple synergistic comorbidities. Ensure narrative justifies this.");
+  }
+
+  return { status, checks, risks, primaryMet, primaryTotal };
+}
+
+function buildNarrative() {
+  const d = state.data;
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  let text = `Patient ${d.initials || ""} is a ${d.age}-year-old ${d.sex || "individual"} evaluated on ${today} for hospice eligibility with a primary terminal diagnosis of ${DX_LABEL[d.dx]}.\n\n`;
+
+  text += `**I. Disease-Specific LCD Criteria:**\n`;
+  if (d.dx === "dementia") {
+    text += `- Staged at FAST ${d.fast} (stage 7c or beyond).\n`;
+    if (d.fastDetails.length) text += `- Demonstrates: ${d.fastDetails.join(", ")}.\n`;
+    if (d.demComorbid.length) text += `- Recent complications (past 12mos): ${d.demComorbid.join(", ")}.\n`;
+  } else if (d.dx === "chf") {
+    text += `- Advanced NYHA Class ${d.nyha} heart failure with symptoms present at rest.\n`;
+    if (d.chfRest.length) text += `- Manifestations include: ${d.chfRest.join(", ")}.\n`;
+    if (d.chfGdmt) {
+      const gMap = { exhausted: "Optimized but refractory to further intervention", contraindicated: "Further GDMT is medically contraindicated", refused: "Further GDMT has been refused by patient/family" };
+      text += `- GDMT Status: ${gMap[d.chfGdmt]}.\n`;
+    }
+    if (d.ef) text += `- LVEF: ${d.ef}%.\n`;
+  } else if (d.dx === "copd") {
+    text += `- End-stage pulmonary disease${d.copdDyspnea === "yes" ? " with disabling dyspnea at rest" : ""}.\n`;
+    if (d.copdFunction.length) text += `- Decreased functional capacity: ${d.copdFunction.join(", ")}.\n`;
+    if (d.copdGdmt) {
+      const gMap = { exhausted: "Refractory to optimal bronchodilator therapy", contraindicated: "Further respiratory therapy is medically contraindicated", refused: "Further respiratory therapy refused" };
+      text += `- GDMT Status: ${gMap[d.copdGdmt]}.\n`;
+    }
+    if (d.fev1) text += `- Post-bronchodilator FEV1: ${d.fev1}% of predicted.\n`;
+  }
+
+  text += `\n**II. Trajectory of General & Functional Decline:**\n`;
+  if (d.baselinePps && d.pps) {
+    text += `- Palliative Performance Scale (PPS) has demonstrated progressive decline from a baseline of ${d.baselinePps}% to a current score of ${d.pps}%.\n`;
+  } else if (d.pps) {
+    text += `- Current Palliative Performance Scale (PPS) score is ${d.pps}%.\n`;
+  }
+  if (d.weightLoss) text += `- Unintentional progressive weight loss of ${d.weightLoss}% over the preceding six months.\n`;
+  if (d.albumin) text += `- Nutritional decline evidenced by serum albumin of ${d.albumin} g/dL.\n`;
+  if (d.edVisits && parseInt(d.edVisits)>0) text += `- Accelerating disease trajectory marked by ${d.edVisits} ED/hospital visits in the past six months.\n`;
+
+  if (d.secComorbidities.length > 0) {
+    text += `\n**III. Synergistic Comorbidities:**\n`;
+    text += `- The primary terminal prognosis is significantly compounded by the following secondary conditions driving systemic failure: ${d.secComorbidities.join(", ")}.\n`;
+  }
+
+  text += `\n**IV. Physician Assessment:**\n`;
+  text += `Taken together, these findings document terminal decline despite optimal medical management. In the clinical judgment of the undersigned, this patient has a life expectancy of six months or less if the disease runs its normal course and is appropriate for the Medicare Hospice Benefit.`;
+
+  return text;
+}
+
+function renderStep4() {
+  const d = state.data;
+  const { status, checks, risks } = assess();
+  const narrative = buildNarrative();
+
+  const verdictMap = {
+    meets: ["meets", "Documentation supports LCD criteria"],
+    partial: ["partial", "Partial criteria captured"],
+    no: ["no", "Primary LCD criteria not supported"]
+  };
+  const [cls, title] = verdictMap[status];
+
+  const checkList = checks.map(c => `<li><span class="tag ${c.na ? "na" : c.met ? "met" : "unmet"}">${c.na ? "N/A" : c.met ? "MET" : "UNMET"}</span>${esc(c.label)}</li>`).join("");
+  
+  let riskAlert = "";
+  if (risks.length > 0) {
+    riskAlert = `
+    <div class="audit-risk">
+      <h3>Pre-Submission Denial Risk Detected</h3>
+      <ul>${risks.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+    </div>`;
+  }
+
+  let trajectoryChart = "";
+  if (d.baselinePps && d.pps) {
+    trajectoryChart = `
+    <div class="trajectory-chart">
+      <h3>Longitudinal Functional Decline (PPS)</h3>
+      <div class="bar-row">
+        <div class="bar-label">Baseline</div>
+        <div class="bar-track"><div class="bar-fill baseline" style="width: ${d.baselinePps}%">${d.baselinePps}%</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Current</div>
+        <div class="bar-track"><div class="bar-fill current" style="width: ${d.pps}%">${d.pps}%</div></div>
+      </div>
+    </div>`;
+  }
+
+  app.innerHTML = `
+  <div class="card">
+    <h2>Eligibility Synthesis</h2>
+    ${riskAlert}
+    <div class="verdict ${cls}"><strong>${title}</strong></div>
+    ${trajectoryChart}
+    <ul class="checks">${checkList}</ul>
+  </div>
+  <div class="card">
+    <h2>CTI Narrative Drafter</h2>
+    <p class="hint">CMS-preferred bulleted format incorporating longitudinal decline and GDMT exhaustion.</p>
+    <textarea id="narrativeOut">${esc(narrative)}</textarea>
+    <div class="nav" style="margin-top:12px">
+      <button id="btnBack">← Back</button>
+      <div style="display:flex;gap:10px">
+        <button id="btnStart">Start over</button>
+        <button class="primary" id="btnCopy">Copy narrative</button>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById("btnBack").onclick = () => go(3);
+  document.getElementById("btnStart").onclick = () => { state.step = 0; renderAll(); };
+  document.getElementById("btnCopy").onclick = () => {
+    const ta = document.getElementById("narrativeOut");
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(
+      () => { document.getElementById("btnCopy").textContent = "Copied ✓"; },
+      () => { document.execCommand("copy"); document.getElementById("btnCopy").textContent = "Copied ✓"; }
+    );
+  };
+}
+
+/* ------------------------------------------------------------------ */
+function go(step) { state.step = step; renderAll(); }
+function renderAll() {
+  renderStepsBar();
+  if (state.step === 0) renderStep0();
+  else if (state.step === 1) renderStep1();
+  else if (state.step === 2) renderStep2();
+  else if (state.step === 3) renderStep3();
+  else renderStep4();
+  window.scrollTo(0, 0);
+}
+renderAll();
+</script>
+</body>
+</html>
