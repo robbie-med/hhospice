@@ -45,6 +45,9 @@ npm run preview  # serve dist/ on 3111
 Stack: React 19, Vite 8, Tailwind 4, react-router (HashRouter so it deploys to any static path),
 vite-plugin-pwa. `base: './'` so GitHub Pages works from a subfolder.
 
+Deploys automatically: `.github/workflows/pages.yml` runs tests, builds and publishes `dist/` to GitHub
+Pages (https://robbie-med.github.io/hhospice/) on every push to `main` that touches `app/`.
+
 ## Disclaimer
 
 Organizes public LCD criteria into a documentation aid. Does not determine eligibility or guarantee
